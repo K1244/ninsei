@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jukebox Continuous Playback Stage (/player)</title>
+  <meta name="description" content="Dedicated continuous video and audio playback client for Virtual Jukebox powered by YouTube IFrame API." />
+
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/player.css" />
+</head>
+<body class="player-page">
+  
+  <!-- Fullscreen Ambient Blurred Album Art Backdrop -->
+  <div id="ambient-backdrop" class="ambient-backdrop"></div>
+
+  <!-- Player Stage Screen -->
+  <div class="player-stage">
+    
+    <!-- Top Stage Header -->
+    <header class="player-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="logo-icon">🎵</div>
+        <div>
+          <h1 style="font-size: 1.4rem; font-weight: 800;" class="gradient-text">Jukebox Main Stage</h1>
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">Continuous Playback Client</span>
+        </div>
+      </div>
+
+      <div class="room-badge">
+        <div class="live-dot"></div>
+        <span style="font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em;">LIVE PLAYER</span>
+      </div>
+    </header>
+
+    <!-- Main Stage Grid (Video Player + Metadata) -->
+    <main class="player-main">
+      
+      <!-- Video Player Frame Container -->
+      <div class="video-frame-wrapper">
+        <div id="youtube-player-iframe"></div>
+      </div>
+
+      <!-- Track Showcase Information -->
+      <div class="track-showcase">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="now-playing-tag">CURRENTLY PLAYING</span>
+          <div class="equalizer-bars">
+            <div class="equalizer-bar"></div>
+            <div class="equalizer-bar"></div>
+            <div class="equalizer-bar"></div>
+            <div class="equalizer-bar"></div>
+          </div>
+        </div>
+
+        <h2 id="player-track-title" class="track-title-large">Connecting to Jukebox...</h2>
+        <div id="player-track-artist" class="track-artist-large">Please wait</div>
+
+        <!-- Synchronized Progress Control -->
+        <div class="player-progress-container">
+          <div class="progress-time-row">
+            <span id="curr-time-display">0:00</span>
+            <span id="total-time-display">0:00</span>
+          </div>
+          <div class="progress-track-bg">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Stage Footer (Next Up Ticker) -->
+    <footer class="player-footer">
+      <div id="next-track-preview" class="next-track-preview">
+        <span style="color: var(--text-muted);">Next: Loading upcoming tracks...</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        FastAPI • YouTube IFrame SDK • WebSockets Sync
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- YouTube IFrame API Script -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  
+  <!-- JavaScript Application Scripts -->
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/player.js"></script>
+</body>
+</html>

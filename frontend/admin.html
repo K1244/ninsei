@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Jukebox - Admin Dashboard</title>
+  <meta name="description" content="Host Admin Control Dashboard for queue moderation, host subscription status testing, and system alerts." />
+
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/admin.css" />
+</head>
+<body>
+  <div class="admin-layout">
+    
+    <!-- Admin Header -->
+    <header class="glass-card" style="padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="logo-icon">🎛️</div>
+        <div>
+          <h1 class="gradient-text" style="font-size: 1.5rem;">Jukebox Admin Control</h1>
+          <span style="font-size: 0.85rem; color: var(--text-secondary);">Room Management & Provider Diagnostic Console</span>
+        </div>
+      </div>
+      <a href="/" class="btn btn-secondary btn-sm" target="_blank">📱 Open User Jukebox</a>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="admin-grid">
+      
+      <!-- Left Column: Queue Control & Moderation -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.2rem; margin-bottom: 16px;">Playback & Queue Moderation</h2>
+          
+          <div class="admin-control-bar">
+            <button id="skip-track-btn" class="btn btn-primary btn-sm">⏭️ Skip Current Song</button>
+            <button id="clear-queue-btn" class="btn btn-danger btn-sm">🗑️ Clear Entire Queue</button>
+          </div>
+
+          <h3 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 12px;">Active Queue Items</h3>
+          <div id="admin-queue-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 20px;">Loading queue...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Host Subscription Simulator & System Alerts -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Host Subscription Simulator Panel -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Host Account Simulator</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Simulate host subscription status & test Spotify 403 Forbidden alert flow.
+          </p>
+
+          <form id="subscription-status-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="select-provider">Active Media Provider Strategy:</label>
+              <select id="select-provider" class="status-select">
+                <option value="youtube" selected>YouTube (IFrame API)</option>
+                <option value="spotify">Spotify (Web Playback SDK Stub)</option>
+              </select>
+            </div>
+
+            <div class="status-form-group">
+              <label for="select-tier">Host Subscription Tier:</label>
+              <select id="select-tier" class="status-select">
+                <option value="premium" selected>Premium Active</option>
+                <option value="free">Free / Lapsed Subscription</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 8px;">
+              Apply & Test Status
+            </button>
+          </form>
+        </div>
+
+        <!-- Real-time Event & Alert Log -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Real-Time System Log</h2>
+          <div id="event-log-container" class="event-log-container">
+            <div class="log-item">
+              <div style="font-weight: 700;">System Initialized</div>
+              <div>Listening for WebSocket alerts and payments...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Scripts -->
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>

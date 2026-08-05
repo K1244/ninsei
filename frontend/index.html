@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Jukebox - Request Songs & Priority Bumps</title>
+  <meta name="description" content="Mobile-first Virtual Jukebox web application for requesting songs, priority queue bumping, and live room playback." />
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/jukebox.css" />
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Header Bar -->
+    <header class="header-bar glass-card">
+      <div class="logo-group">
+        <div class="logo-icon">🎵</div>
+        <div>
+          <h1 class="brand-title gradient-text">Jukebox VIP</h1>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Party Room #4092</span>
+        </div>
+      </div>
+      <button id="show-qr-btn" class="btn btn-secondary btn-sm" aria-label="Show QR Code">
+        📱 Join Room
+      </button>
+    </header>
+
+    <!-- Currently Playing Hero Card -->
+    <section class="glass-card now-playing-hero" id="now-playing-card">
+      <div style="text-align: center; padding: 10px; color: var(--text-muted);">
+        Loading current track...
+      </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="search-input" 
+          class="search-input" 
+          placeholder="Search YouTube songs, artists..." 
+          autocomplete="off"
+        />
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </section>
+
+    <!-- Upcoming Queue Section -->
+    <section class="queue-section">
+      <div class="section-title-group">
+        <h2>Upcoming Queue</h2>
+        <span class="badge badge-purple">LIVE SYNC</span>
+      </div>
+      
+      <div id="queue-list" class="queue-list">
+        <div class="glass-card" style="padding: 24px; text-align: center; color: var(--text-muted);">
+          Loading queue...
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Priority Payment Modal -->
+  <div id="payment-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <h2 id="modal-title" class="gradient-text" style="font-size: 1.5rem; margin-bottom: 6px;">
+        ⚡ Priority Boost Request
+      </h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        Bump <strong id="modal-song-title" style="color: #fff;">Song Title</strong> up the queue position.
+      </p>
+
+      <div id="tier-options-container" class="tier-selector"></div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+          Mock Payment Card (Simulated):
+        </label>
+        <input 
+          type="text" 
+          class="search-input" 
+          value="•••• •••• •••• 4242 (Mock Visa)" 
+          disabled 
+          style="font-size: 0.9rem; padding: 10px 14px;"
+        />
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary close-modal-btn" style="flex: 1;">Cancel</button>
+        <button id="submit-payment-btn" class="btn btn-primary" style="flex: 2;">
+          Pay & Bump Queue 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qr-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-content" style="text-align: center;">
+      <h2 class="gradient-text" style="margin-bottom: 12px;">Scan to Request Songs</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+        Share this QR code with guests in the room to let them queue songs directly from their phones.
+      </p>
+      
+      <!-- Visual SVG Simulated QR Code -->
+      <div style="background: #fff; padding: 16px; border-radius: 16px; display: inline-block; margin-bottom: 20px;">
+        <svg width="180" height="180" viewBox="0 0 100 100" fill="#000">
+          <rect width="100" height="100" fill="#fff" />
+          <path d="M10 10h30v30H10zM15 15v20h20V15zM20 20h10v10H20z" />
+          <path d="M60 10h30v30H60zM65 15v20h20V15zM70 20h10v10H70z" />
+          <path d="M10 60h30v30H10zM15 65v20h20V65zM20 70h10v10H20z" />
+          <path d="M45 10h10v10H45zM45 30h10v20H45zM10 45h20v10H10zM70 45h20v10H70zM45 60h20v10H45zM45 80h10v10H45zM70 70h20v20H70z" />
+        </svg>
+      </div>
+
+      <div>
+        <button class="btn btn-secondary close-modal-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Scripts -->
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/jukebox.js"></script>
+</body>
+</html>
