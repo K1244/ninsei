@@ -15,8 +15,3 @@ zerops:
         - port: 8000
           httpSupport: true
       start: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-      envVariables:
-        DATABASE_URL: postgresql+asyncpg://${db_user}:${db_password}@${db_hostname}:5432/${db_name}
-        REDIS_URL: redis://${cache_hostname}:6379/0
-        YOUTUBE_API_KEY: ""
-        HOST_SPOTIFY_TIER: "premium"
