@@ -18,9 +18,12 @@ zerops:
 
   - setup: zcp
     build:
-      base: nodejs@20
+      base: python@3.11
       buildCommands:
-        - npm install -g @google/antigravity-cli
+        - pip install git+https://github.com/google-antigravity/antigravity-sdk-python.git
       deployFiles: ./
     run:
-      base: nodejs@20
+      base: python@3.11
+      ports:
+        - port: 8080
+          httpSupport: true
