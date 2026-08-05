@@ -15,3 +15,7 @@ zerops:
         - port: 8000
           httpSupport: true
       start: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+
+  - setup: zcp
+    run:
+      base: zcp@1
