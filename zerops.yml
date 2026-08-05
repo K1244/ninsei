@@ -18,7 +18,9 @@ zerops:
 
   - setup: zcp
     build:
-      base: ubuntu@22.04
+      base: nodejs@20
+      buildCommands:
+        - npm install -g @google/antigravity-cli
       deployFiles: ./
     run:
-      base: ubuntu@22.04
+      base: nodejs@20
