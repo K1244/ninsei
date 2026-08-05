@@ -15,15 +15,3 @@ zerops:
         - port: 8000
           httpSupport: true
       start: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-
-  - setup: zcp
-    build:
-      base: python@3.11
-      buildCommands:
-        - pip install git+https://github.com/google-antigravity/antigravity-sdk-python.git
-      deployFiles: ./
-    run:
-      base: python@3.11
-      ports:
-        - port: 8080
-          httpSupport: true
