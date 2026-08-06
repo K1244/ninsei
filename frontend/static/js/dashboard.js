@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const logoutBtn = document.getElementById('logout-btn');
   const claimDeviceForm = document.getElementById('claim-device-form');
   const deviceList = document.getElementById('device-list');
+  const playerLinkInput = document.getElementById('player-link-input');
+  const copyPlayerLinkBtn = document.getElementById('copy-player-link-btn');
+  const regeneratePlayerLinkBtn = document.getElementById('regenerate-player-link-btn');
   const upgradeBtn = document.getElementById('upgrade-subscription-btn');
   const revenueSummaryEl = document.getElementById('revenue-summary');
   const proSettingsForm = document.getElementById('pro-settings-form');
@@ -152,7 +155,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 8. Device pairing: list + claim form
+  // 8. Device pairing: copyable one-click link + list + manual claim form
+  await loadPlayerLink();
+  if (copyPlayerLinkBtn) {
+    copyPlayerLinkBtn.addEventListener('click', async () => {
+      const url = playerLinkInput.value;
+      if (!url || url === 'Loading...') return;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Player link copied.', 'success');
+      } catch (err) {
+        // Clipboard API can be unavailable (older browser, insecure context) --
+        // fall back to select-and-let-the-user-copy instead of failing silently.
+        playerLinkInput.select();
+        showToast('Could not auto-copy -- link is selected, press Ctrl/Cmd+C.', 'info');
+      }
+    });
+  }
+  if (regeneratePlayerLinkBtn) {
+    regeneratePlayerLinkBtn.addEventListener('click', async () => {
+      if (!confirm('Regenerate the player link? The old link will stop working (already-linked devices are unaffected).')) return;
+      try {
+        const res = await fetch('/api/dashboard/player-link/regenerate', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          playerLinkInput.value = data.url;
+          showToast('Player link regenerated.', 'success');
+        } else {
+          showToast(data.detail || 'Failed to regenerate link.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error regenerating link.', 'error');
+      }
+    });
+  }
+
   await loadDevices();
   if (claimDeviceForm) {
     claimDeviceForm.addEventListener('submit', async (e) => {
@@ -383,6 +420,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (qrImg) qrImg.src = `/api/v/${v.slug}/qr.svg`;
     if (tierLabel) tierLabel.textContent = v.subscription_tier.toUpperCase();
+  }
+
+  async function loadPlayerLink() {
+    if (!playerLinkInput) return;
+    try {
+      const res = await fetch('/api/dashboard/player-link');
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      // API may return a bare path (no PUBLIC_ORIGIN configured locally) --
+      // resolve it against this page's own origin so the copied link is
+      // always a complete, pasteable URL either way.
+      playerLinkInput.value = new URL(data.url, window.location.origin).href;
+    } catch (err) {
+      playerLinkInput.value = 'Failed to load link.';
+    }
   }
 
   async function loadDevices() {

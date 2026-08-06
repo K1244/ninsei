@@ -81,6 +81,57 @@ async def get_device_by_token(db: AsyncSession, device_token: str) -> Optional[D
     return result.scalars().first()
 
 
+# --- Copyable one-click player link (bypasses the pairing-code step) ---
+
+def _generate_player_link_token() -> str:
+    return secrets.token_urlsafe(24)
+
+
+async def get_or_create_player_link_token(db: AsyncSession, venue: Venue) -> str:
+    """Lazily backfills venues that existed before this feature shipped --
+    the light migration fills the new column with '', not a real token,
+    since a plain ALTER TABLE DEFAULT can't call token_urlsafe() per row."""
+    if not venue.player_link_token:
+        venue.player_link_token = _generate_player_link_token()
+        await db.commit()
+        await db.refresh(venue)
+    return venue.player_link_token
+
+
+async def regenerate_player_link_token(db: AsyncSession, venue: Venue) -> str:
+    """Invalidates any previously copied/shared link. Devices already
+    claimed keep working -- the token only gates the initial auto-claim."""
+    venue.player_link_token = _generate_player_link_token()
+    await db.commit()
+    await db.refresh(venue)
+    return venue.player_link_token
+
+
+async def link_device_via_token(db: AsyncSession, slug: str, key: str, device_token: Optional[str]) -> DeviceLink:
+    """Auto-claim flow for the venue's copyable player link
+    (/play/<slug>/<token>) -- skips typing a pairing code into the dashboard
+    entirely: opening the right URL on the playback device is enough.
+    Raises ValueError for an unknown venue, wrong/regenerated token, or a
+    device that's already claimed by a *different* venue."""
+    result = await db.execute(select(Venue).where(Venue.slug == slug))
+    venue = result.scalars().first()
+    if not venue or not venue.player_link_token or not secrets.compare_digest(venue.player_link_token, key):
+        raise ValueError("This player link is invalid or has been regenerated. Ask the venue owner for a fresh one.")
+
+    device = await register_or_refresh_device(db, device_token)
+    if device.venue_id is not None and device.venue_id != venue.id:
+        raise ValueError("This device is already linked to a different venue. Unlink it from that venue's dashboard first.")
+
+    if device.venue_id is None:
+        device.venue_id = venue.id
+        device.claimed_at = _utcnow()
+        device.pairing_code = None
+        device.pairing_code_expires_at = None
+        await db.commit()
+        await db.refresh(device)
+    return device
+
+
 def _rate_limited(venue_id: int) -> bool:
     now = time.time()
     attempts = _failed_claim_attempts[venue_id]

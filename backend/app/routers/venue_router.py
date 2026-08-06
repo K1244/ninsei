@@ -5,13 +5,16 @@ from typing import List
 from backend.app.database import get_db
 from backend.app.models import Venue
 from backend.app.auth import get_current_venue
-from backend.app.config import FAVORITE_GENRE_OPTIONS, FAVORITE_GENRE_KEYS
+from backend.app.config import settings, FAVORITE_GENRE_OPTIONS, FAVORITE_GENRE_KEYS
 from backend.app.schemas import (
     DeviceClaimRequest, DeviceResponse, VenueResponse, VenueSettingsUpdate,
     SubscriptionUpgradeRequest, VenueStyleCreate, VenueStyleUpdate, VenueStyleResponse,
     RevenueSummaryResponse,
 )
-from backend.app.services.device_service import claim_device, list_devices, unlink_device
+from backend.app.services.device_service import (
+    claim_device, list_devices, unlink_device,
+    get_or_create_player_link_token, regenerate_player_link_token,
+)
 from backend.app.services.queue_service import skip_current_track, clear_queue, remove_from_queue
 from backend.app.services.ws_manager import ws_manager
 from backend.app.services import style_service, autoplay_service
@@ -142,6 +145,28 @@ async def upgrade_subscription(
 
 
 # --- Devices ---
+
+def _build_player_link_url(venue: Venue, token: str) -> str:
+    path = f"/play/{venue.slug}/{token}"
+    return f"{settings.PUBLIC_ORIGIN}{path}" if settings.PUBLIC_ORIGIN else path
+
+
+@router.get("/player-link")
+async def get_player_link(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    """Copyable, venue-specific playback-device URL -- opening it in the
+    TV/tablet's browser auto-claims that device, skipping the manual
+    pairing-code flow below entirely. See device_service.link_device_via_token."""
+    token = await get_or_create_player_link_token(db, venue)
+    return {"url": _build_player_link_url(venue, token)}
+
+
+@router.post("/player-link/regenerate")
+async def regenerate_player_link(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    """Invalidates the previous link (e.g. it got shared somewhere it
+    shouldn't have) -- devices already linked keep working."""
+    token = await regenerate_player_link_token(db, venue)
+    return {"url": _build_player_link_url(venue, token)}
+
 
 @router.get("/devices", response_model=List[DeviceResponse])
 async def get_devices(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):

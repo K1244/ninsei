@@ -3,10 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.database import get_db
 from backend.app.schemas import (
-    DeviceRegisterRequest, DeviceRegisterResponse, DeviceStatusResponse, PlayerEventUpdate,
+    DeviceRegisterRequest, DeviceRegisterResponse, DeviceStatusResponse, PlayerEventUpdate, DeviceLinkRequest,
 )
 from backend.app.services.device_service import (
-    register_or_refresh_device, get_device_by_token, _venue_summary,
+    register_or_refresh_device, get_device_by_token, _venue_summary, link_device_via_token,
 )
 from backend.app.services.queue_service import advance_queue
 from backend.app.services.ws_manager import ws_manager
@@ -23,6 +23,26 @@ async def register_device(req: DeviceRegisterRequest, db: AsyncSession = Depends
     plus a pairing code to show on screen while unclaimed.
     """
     device = await register_or_refresh_device(db, req.device_token)
+    summary = await _venue_summary(db, device.venue_id)
+    return DeviceRegisterResponse(
+        device_token=device.device_token,
+        pairing_code=device.pairing_code,
+        claimed=device.venue_id is not None,
+        **summary,
+    )
+
+
+@router.post("/link", response_model=DeviceRegisterResponse)
+async def link_device(req: DeviceLinkRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Called by the player machine when it's opened at /play/<slug>/<token> --
+    the venue's copyable one-click link (see venue_router.py's /player-link).
+    Auto-claims the device with no pairing-code entry required.
+    """
+    try:
+        device = await link_device_via_token(db, req.slug.strip(), req.key.strip(), req.device_token)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     summary = await _venue_summary(db, device.venue_id)
     return DeviceRegisterResponse(
         device_token=device.device_token,

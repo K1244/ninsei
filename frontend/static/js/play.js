@@ -301,6 +301,53 @@ function showPairingCode(code) {
   if (codeEl) codeEl.textContent = code || '------';
 }
 
+function showPairingError(message) {
+  const statusEl = document.getElementById('pairing-status');
+  if (statusEl) {
+    statusEl.textContent = message;
+    statusEl.style.color = 'var(--accent-rose)';
+  }
+}
+
+// If this page was opened at the venue's copyable one-click link
+// (/play/<slug>/<token> -- see venue_router.py's /player-link and the
+// "Playback Devices" dashboard panel), auto-claim this device against that
+// venue and skip the pairing-code screen entirely. Returns true once
+// claimed; false to fall back to the normal register+poll flow below
+// (including on an invalid/regenerated link, so a bad link degrades to
+// "pair manually" instead of getting stuck).
+async function tryAutoLinkFromUrl() {
+  const match = window.location.pathname.match(/^\/play\/([^/]+)\/([^/]+)\/?$/);
+  if (!match) return false;
+
+  const [, slug, token] = match;
+  const stored = localStorage.getItem(DEVICE_TOKEN_STORAGE_KEY);
+
+  try {
+    const res = await fetch('/api/devices/link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: decodeURIComponent(slug), key: decodeURIComponent(token), device_token: stored || null })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showPairingError(data.detail || 'This player link is invalid.');
+      return false;
+    }
+    deviceToken = data.device_token;
+    localStorage.setItem(DEVICE_TOKEN_STORAGE_KEY, deviceToken);
+    if (data.claimed) {
+      onPaired(data);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('[Pairing] Auto-link failed:', err);
+    showPairingError('Could not reach the server to link this player. Retrying with a manual code instead...');
+    return false;
+  }
+}
+
 async function pollUntilClaimed() {
   try {
     const data = await registerDevice(); // also refreshes the code if it expired
@@ -359,6 +406,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.JukeboxWS.on('QUEUE_UPDATED', (payload) => {
     renderNextTrackPreview(payload.queue);
   });
+
+  const autoLinked = await tryAutoLinkFromUrl();
+  if (autoLinked) return;
 
   try {
     const initial = await registerDevice();

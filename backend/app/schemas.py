@@ -121,6 +121,14 @@ class DeviceStatusResponse(BaseModel):
 class DeviceClaimRequest(BaseModel):
     pairing_code: str
 
+class DeviceLinkRequest(BaseModel):
+    # Sent by the player page when it's opened at /play/<slug>/<token> --
+    # the copyable one-click link from the dashboard (see venue_router.py's
+    # /player-link). Auto-claims the device with no code entry needed.
+    slug: str
+    key: str
+    device_token: Optional[str] = None
+
 class DeviceResponse(BaseModel):
     id: int
     label: Optional[str]

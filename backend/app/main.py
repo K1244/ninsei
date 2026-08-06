@@ -95,6 +95,15 @@ async def dashboard_page():
 async def play_page():
     return FileResponse(os.path.join(FRONTEND_DIR, "play.html"))
 
+@app.get("/play/{slug}/{token}", response_class=FileResponse)
+async def play_page_direct_link(slug: str, token: str):
+    # Same static file as the generic /play above -- slug/token are read and
+    # verified client-side (see play.js's tryAutoLinkFromUrl, which posts
+    # them to /api/devices/link) so this device auto-claims itself against
+    # that venue with no pairing code entry needed. See venue_router.py's
+    # /player-link, which is where this URL is generated for the dashboard.
+    return FileResponse(os.path.join(FRONTEND_DIR, "play.html"))
+
 @app.get("/v/{slug}", response_class=FileResponse)
 async def guest_page(slug: str):
     # Same static file for every venue -- the slug is read and validated

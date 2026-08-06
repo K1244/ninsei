@@ -85,13 +85,26 @@
             Link the TV/speaker machine at your venue -- it can be a completely different device than the one you're using right now.
           </p>
 
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+              Fastest way: open this link in the playback device's browser -- it links instantly, no code needed:
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input id="player-link-input" class="status-select" type="text" readonly style="flex: 1; font-size: 0.8rem; min-width: 0;" value="Loading..." />
+              <button id="copy-player-link-btn" class="btn btn-secondary btn-sm" style="flex-shrink: 0;">📋 Copy</button>
+            </div>
+            <button id="regenerate-player-link-btn" class="btn btn-secondary btn-sm" style="margin-top: 8px; font-size: 0.7rem; padding: 6px 12px;">
+              🔄 Regenerate Link
+            </button>
+          </div>
+
           <div id="device-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
             <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading devices...</div>
           </div>
 
           <form id="claim-device-form" class="status-panel-group">
             <div class="status-form-group">
-              <label for="pairing-code-input">Link a Device: open <code>/play</code> on the playback machine and enter its 6-digit code:</label>
+              <label for="pairing-code-input">Or pair manually: open <code>/play</code> on the playback machine and enter its 6-digit code:</label>
               <input id="pairing-code-input" class="status-select" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off" />
             </div>
             <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Link Device</button>

@@ -1,4 +1,5 @@
 import datetime
+import secrets
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Text
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
@@ -67,6 +68,16 @@ class Venue(Base):
     # reads/writes as a list. Available at every tier, but only has a visible
     # effect once autoplay is running (Pro-only) -- see autoplay_service.py.
     favorite_genres_csv = Column("favorite_genres", Text, nullable=False, default="")
+
+    # Secret behind this venue's copyable, one-click player-linking URL (see
+    # venue_router.py's /player-link endpoints and device_service.
+    # link_device_via_token) -- opening /play/<slug>/<token> auto-claims a
+    # device without the owner having to type a pairing code into the
+    # dashboard. Newly registered venues get one immediately (Column
+    # default); venues that existed before this feature shipped get '' from
+    # the light migration and are lazily backfilled on first use, since a
+    # DDL ALTER TABLE default can't call token_urlsafe() per row.
+    player_link_token = Column(String(64), nullable=False, default=lambda: secrets.token_urlsafe(24))
 
     created_at = Column(DateTime, default=_utcnow)
 
