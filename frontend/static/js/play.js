@@ -323,14 +323,32 @@ async function tryAutoLinkFromUrl() {
   const [, slug, token] = match;
   const stored = localStorage.getItem(DEVICE_TOKEN_STORAGE_KEY);
 
-  try {
+  const attemptLink = async (existingDeviceToken) => {
     const res = await fetch('/api/devices/link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: decodeURIComponent(slug), key: decodeURIComponent(token), device_token: stored || null })
+      body: JSON.stringify({ slug: decodeURIComponent(slug), key: decodeURIComponent(token), device_token: existingDeviceToken || null })
     });
-    const data = await res.json();
-    if (!res.ok) {
+    return { ok: res.ok, data: await res.json() };
+  };
+
+  try {
+    let { ok, data } = await attemptLink(stored);
+
+    // This browser/device was already claimed by a *different* venue --
+    // very plausible when testing several venues from the same laptop, or
+    // repurposing a physical screen. Opening this link is an unambiguous
+    // "link THIS venue to THIS screen now" signal, so re-home it as a fresh
+    // device identity instead of what used to happen here: silently falling
+    // through to the generic register/poll flow below with the *old*
+    // stored device_token, which just re-reported the old venue as already
+    // claimed and kept showing its playback -- indistinguishable from the
+    // link "not working" at all.
+    if (!ok && data.detail && data.detail.includes('already linked to a different venue')) {
+      ({ ok, data } = await attemptLink(null));
+    }
+
+    if (!ok) {
       showPairingError(data.detail || 'This player link is invalid.');
       return false;
     }
