@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jukebox VIP - The Request Machine for Bars & Venues</title>
+  <meta name="description" content="Let your guests request songs and pay to bump the queue. Pair any TV or speaker as your player, manage everything from your phone." />
+
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/auth.css" />
+</head>
+<body>
+
+  <nav class="marketing-nav">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="logo-icon">🎵</div>
+      <span class="gradient-text" style="font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem;">Jukebox VIP</span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/login" class="btn btn-secondary btn-sm">Log In</a>
+      <a href="/register" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </nav>
+
+  <section class="hero-section">
+    <span class="badge badge-purple" style="margin-bottom: 20px;">FOR BARS, PUBS & VENUES</span>
+    <h1 class="hero-title gradient-text">Your guests pick the music.<br>You keep the tab running.</h1>
+    <p class="hero-subtitle">
+      Guests scan a QR code, search songs, and pay to jump the queue. You pair any TV or speaker
+      as the player and manage the whole room from your phone -- even from across the bar.
+    </p>
+    <div class="hero-cta-group">
+      <a href="/register" class="btn btn-primary">Create Your Venue Account</a>
+      <a href="/login" class="btn btn-secondary">I already have an account</a>
+    </div>
+  </section>
+
+  <section class="feature-grid">
+    <div class="glass-card feature-card">
+      <div class="feature-icon">📱</div>
+      <h3 style="margin-bottom: 8px;">Guests Request From Their Phones</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">A QR code on the table links straight to your venue's live queue -- no app to download.</p>
+    </div>
+    <div class="glass-card feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3 style="margin-bottom: 8px;">Priority Boosts</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">Guests can pay to jump the line. Simulated payments today, real billing is a drop-in swap.</p>
+    </div>
+    <div class="glass-card feature-card">
+      <div class="feature-icon">📺</div>
+      <h3 style="margin-bottom: 8px;">Any Screen Becomes the Player</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">Open <code>/play</code> on the TV or speaker system, enter a short code from your dashboard, done.</p>
+    </div>
+    <div class="glass-card feature-card">
+      <div class="feature-icon">🎛️</div>
+      <h3 style="margin-bottom: 8px;">Manage From Anywhere</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">Skip tracks, moderate the queue, and check on things from your own phone or laptop -- not the player.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="gradient-text" style="text-align: center; margin-bottom: 8px;">Simple Pricing</h2>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 8px;">Simulated for now -- swap in real billing whenever you're ready.</p>
+    <div class="pricing-grid">
+      <div class="glass-card pricing-card">
+        <div class="badge badge-purple" style="margin-bottom: 8px;">FREE</div>
+        <div class="pricing-price">$0</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">One venue, unlimited guest requests, one paired player.</p>
+        <a href="/register" class="btn btn-secondary btn-sm" style="width: 100%;">Start Free</a>
+      </div>
+      <div class="glass-card pricing-card" style="border-color: var(--glass-border-glow);">
+        <div class="badge badge-amber" style="margin-bottom: 8px;">PRO</div>
+        <div class="pricing-price">Simulated</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">Everything in Free, upgradeable anytime from your dashboard.</p>
+        <a href="/register" class="btn btn-primary btn-sm" style="width: 100%;">Start Free, Upgrade Later</a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align: center; padding: 32px 24px; color: var(--text-muted); font-size: 0.85rem;">
+    Jukebox VIP • FastAPI • WebSockets • YouTube IFrame API
+  </footer>
+
+</body>
+</html>

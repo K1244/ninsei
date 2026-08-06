@@ -168,6 +168,12 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(16, 185, 129, 0.4);
 }
 
+.badge-rose {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
 /* Audio Equalizer Animation */
 .equalizer-bars {
   display: flex;

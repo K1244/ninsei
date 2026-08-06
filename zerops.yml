@@ -3,18 +3,45 @@ zerops:
     build:
       base: python@3.11
       buildCommands:
-        - pip install --upgrade pip
-        - pip install -r backend/requirements.txt
+        # Build and run happen in separate containers, so anything installed
+        # outside the working directory (e.g. a plain global `pip install`)
+        # never reaches the run container. Building into a local .venv keeps
+        # the installed packages inside the working dir so deployFiles can
+        # actually ship them. --copies (instead of the default symlinks)
+        # makes the venv self-contained: console scripts like `uvicorn` get a
+        # shebang pointing back into .venv/bin/python3, which only survives
+        # the trip to the run container as a real file, not a symlink to a
+        # build-container-only path.
+        - python -m venv --copies .venv
+        - .venv/bin/pip install --upgrade pip
+        - .venv/bin/pip install -r backend/requirements.txt
       deployFiles:
+        - .venv/
         - backend/
         - frontend/
         - zerops.yml
+        # Gitignored on purpose (contains YOUTUBE_API_KEY/SECRET_KEY/etc). This
+        # file must exist in the local working dir at push time, and every
+        # future deploy of this service MUST use `zcli push --no-git` (or
+        # otherwise force an untracked-file upload) or these secrets silently
+        # stop shipping to the run container.
+        - .env
     run:
       base: python@3.11
       ports:
         - port: 8000
           httpSupport: true
-      start: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+      envVariables:
+        # db_connectionString (auto-injected from the linked `db` Postgres
+        # service) omits the trailing database-name path segment that asyncpg
+        # requires, so it's appended here from db_dbName.
+        DATABASE_URL: ${db_connectionString}/${db_dbName}
+      # Invoked as `python3 -m uvicorn` rather than the `.venv/bin/uvicorn`
+      # console-script: that script's shebang is an absolute path baked in at
+      # build time and doesn't resolve in the run container. `.venv/bin/python3`
+      # is a real (--copies) binary the shell execs directly, sidestepping the
+      # shebang lookup entirely.
+      start: .venv/bin/python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
 
   - setup: zcp
     run:

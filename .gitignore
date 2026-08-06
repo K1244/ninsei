@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local runtime data
+*.db
+*.sqlite3
+
+# Environment / secrets
+.env
+.env.*
+
+# Editor/OS cruft
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Venue Dashboard - Jukebox VIP</title>
+  <meta name="description" content="Venue owner dashboard for queue moderation, device pairing, subscription, and provider diagnostics." />
+
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/admin.css" />
+</head>
+<body>
+  <div class="admin-layout">
+
+    <!-- Dashboard Header -->
+    <header class="glass-card" style="padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="logo-icon">🎛️</div>
+        <div>
+          <h1 class="gradient-text" style="font-size: 1.5rem;" id="dashboard-venue-name">Loading...</h1>
+          <span style="font-size: 0.85rem; color: var(--text-secondary);">Venue Dashboard</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a id="open-guest-page-link" href="#" class="btn btn-secondary btn-sm" target="_blank">📱 Open Guest Page</a>
+        <button id="logout-btn" class="btn btn-secondary btn-sm">Log Out</button>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="admin-grid">
+
+      <!-- Left Column: Queue Control & Moderation -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.2rem; margin-bottom: 16px;">Playback & Queue Moderation</h2>
+
+          <div class="admin-control-bar">
+            <button id="skip-track-btn" class="btn btn-primary btn-sm">⏭️ Skip Current Song</button>
+            <button id="clear-queue-btn" class="btn btn-danger btn-sm">🗑️ Clear Entire Queue</button>
+          </div>
+
+          <h3 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 12px;">Active Queue Items</h3>
+          <div id="admin-queue-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 20px;">Loading queue...</div>
+          </div>
+        </div>
+
+        <!-- Real-time Event & Alert Log -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Real-Time System Log</h2>
+          <div id="event-log-container" class="event-log-container">
+            <div class="log-item">
+              <div style="font-weight: 700;">System Initialized</div>
+              <div>Listening for WebSocket alerts and payments...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Venue, Devices, Subscription, Provider Simulator -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Guest QR Card -->
+        <div class="glass-card admin-card" style="text-align: center;">
+          <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Guest Request QR Code</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Print or display this at your venue so guests can request songs from their phones.
+          </p>
+          <div style="background: #fff; padding: 12px; border-radius: 16px; display: inline-block;">
+            <img id="guest-qr-image" src="" alt="Guest request QR code" width="160" height="160" />
+          </div>
+          <div style="margin-top: 12px;">
+            <a id="guest-page-url" href="#" target="_blank" style="font-size: 0.8rem; color: var(--accent-cyan); word-break: break-all;"></a>
+          </div>
+        </div>
+
+        <!-- Playback Devices -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Playback Devices</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Link the TV/speaker machine at your venue -- it can be a completely different device than the one you're using right now.
+          </p>
+
+          <div id="device-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading devices...</div>
+          </div>
+
+          <form id="claim-device-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="pairing-code-input">Link a Device: open <code>/play</code> on the playback machine and enter its 6-digit code:</label>
+              <input id="pairing-code-input" class="status-select" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Link Device</button>
+          </form>
+        </div>
+
+        <!-- Subscription -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 8px;">Subscription</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+            Current plan: <span id="subscription-tier-label" class="badge badge-purple">FREE</span>
+          </p>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            Simulated billing -- no real payment is processed.
+          </p>
+          <button id="upgrade-subscription-btn" class="btn btn-secondary btn-sm" style="width: 100%;">⭐ Upgrade to Pro (Simulated)</button>
+        </div>
+
+        <!-- Host Subscription Simulator Panel -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Host Account Simulator</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Simulate host subscription status & test Spotify 403 Forbidden alert flow.
+          </p>
+
+          <form id="subscription-status-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="select-provider">Active Media Provider Strategy:</label>
+              <select id="select-provider" class="status-select">
+                <option value="youtube">YouTube (IFrame API)</option>
+                <option value="spotify">Spotify (Web Playback SDK Stub)</option>
+              </select>
+            </div>
+
+            <div class="status-form-group">
+              <label for="select-tier">Host Subscription Tier:</label>
+              <select id="select-tier" class="status-select">
+                <option value="premium">Premium Active</option>
+                <option value="free">Free / Lapsed Subscription</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 8px;">
+              Apply & Test Status
+            </button>
+          </form>
+        </div>
+
+        <!-- Revenue & Payout Split -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Revenue & Payout Split</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Priority boosts and premium-style unlocks, all-time.
+          </p>
+          <div id="revenue-summary" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading revenue...</div>
+          </div>
+        </div>
+
+        <!-- Automated Playlists & Premium Pricing (Pro) -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Automated Playlists & Premium Pricing</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Pro: auto-fill the queue from your venue's own request history when real requests run low, and set what guests pay to unlock a premium-only style.
+          </p>
+          <div id="pro-settings-locked" style="display: none; text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.85rem;">
+            🔒 Upgrade to Pro (see Subscription panel) to enable autoplay and premium style pricing.
+          </div>
+          <form id="pro-settings-form" class="status-panel-group">
+            <div class="status-form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+              <label for="autoplay-toggle" style="margin: 0;">Autoplay when the queue runs low</label>
+              <input type="checkbox" id="autoplay-toggle" style="width: 18px; height: 18px;" />
+            </div>
+            <div class="status-form-group">
+              <label for="unlock-fee-input">Premium style unlock fee ($):</label>
+              <input type="number" id="unlock-fee-input" class="status-select" min="0" step="0.5" />
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 8px;">
+              Save Pro Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Genre & Style Rules (Pro) -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Genre & Style Rules</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Tag styles as preferred (favored by autoplay), premium-only (guests pay the unlock fee above), or prohibited (never accepted).
+          </p>
+          <div id="styles-locked" style="display: none; text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.85rem;">
+            🔒 Upgrade to Pro to configure genre rules.
+          </div>
+          <div id="styles-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
+          <form id="add-style-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="style-name-input">Style / genre name:</label>
+              <input type="text" id="style-name-input" class="status-select" placeholder="e.g. Metal" autocomplete="off" />
+            </div>
+            <div class="status-form-group">
+              <label for="style-rule-select">Rule:</label>
+              <select id="style-rule-select" class="status-select">
+                <option value="preferred">Preferred (favored by autoplay)</option>
+                <option value="premium_only">Premium-only (guests pay to unlock)</option>
+                <option value="prohibited">Prohibited (never accepted)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Add / Update Style</button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Scripts -->
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

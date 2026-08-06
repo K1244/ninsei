@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log In - Jukebox VIP</title>
+  <meta name="description" content="Log in to your venue dashboard." />
+
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/auth.css" />
+</head>
+<body>
+  <div class="auth-page-wrapper">
+    <div class="glass-card auth-card">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div class="logo-icon" style="font-size: 2rem;">🎵</div>
+        <h1 class="gradient-text" style="font-size: 1.6rem; margin-top: 8px;">Welcome Back</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Log in to your venue dashboard.</p>
+      </div>
+
+      <div id="form-error" class="auth-error"></div>
+
+      <form id="login-form">
+        <div class="auth-form-group">
+          <label for="email">Email</label>
+          <input id="email" class="auth-input" type="email" placeholder="owner@yourvenue.com" required autocomplete="email" />
+        </div>
+        <div class="auth-form-group">
+          <label for="password">Password</label>
+          <input id="password" class="auth-input" type="password" placeholder="Your password" required autocomplete="current-password" />
+        </div>
+        <button id="submit-btn" type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">Log In</button>
+      </form>
+
+      <div class="auth-switch-link">
+        Don't have a venue yet? <a href="/register">Create one</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('form-error');
+      const submitBtn = document.getElementById('submit-btn');
+      errorEl.classList.remove('visible');
+
+      const payload = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          errorEl.textContent = data.detail || 'Login failed.';
+          errorEl.classList.add('visible');
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.add('visible');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Log In';
+      }
+    });
+  </script>
+</body>
+</html>

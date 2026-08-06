@@ -27,12 +27,14 @@ A full-stack real-time Virtual Jukebox web application. Users can browse, search
 ## 🚀 Local Quickstart
 
 ### 1. Install Dependencies
+Run this from the repository root:
 ```bash
-cd backend
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 ```
 
 ### 2. Launch FastAPI App
+Also from the repository root (the app is imported as `backend.app.main`, so this
+won't resolve from inside `backend/`):
 ```bash
 python3 -m uvicorn backend.app.main:app --reload --port 8000
 ```

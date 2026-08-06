@@ -176,11 +176,19 @@ class YouTubeProvider(BaseMediaProvider):
                 if resp.status_code == 200:
                     data = resp.json()
                     for item in data.get("results", []):
-                        # Use first demo track or search string for matching
+                        track_name_lower = item["trackName"].lower()
+                        # Only surface an iTunes result when we can pair it with a YouTube
+                        # ID we're confident is the *same* song. Previously, unmatched
+                        # tracks fell back to an arbitrary demo video by index, which
+                        # displayed correct metadata (title/artist/art) for a completely
+                        # different song than what actually played. Skip rather than guess.
                         matching_demo = next(
-                            (d for d in DEMO_YOUTUBE_TRACKS if item["trackName"].lower() in d.title.lower()),
-                            DEMO_YOUTUBE_TRACKS[len(results) % len(DEMO_YOUTUBE_TRACKS)]
+                            (d for d in DEMO_YOUTUBE_TRACKS
+                             if track_name_lower in d.title.lower() or d.title.lower() in track_name_lower),
+                            None
                         )
+                        if not matching_demo:
+                            continue
                         results.append(
                             TrackSearchResult(
                                 song_id=matching_demo.song_id,

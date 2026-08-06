@@ -158,6 +158,36 @@ body.player-page {
   transition: width 0.3s linear;
 }
 
+/* Device Pairing Screen (shown until this browser is linked to a venue) */
+.pairing-screen {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pairing-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.pairing-code-display {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 3rem;
+  letter-spacing: 0.3em;
+  padding: 20px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border-glow);
+  border-radius: var(--radius-md);
+  color: #fff;
+}
+
 /* Next Track Ticker Footer */
 .player-footer {
   display: flex;

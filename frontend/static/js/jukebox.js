@@ -1,32 +1,80 @@
 /**
- * User Jukebox Mobile Frontend Logic
+ * Guest Jukebox Request Page (served at /v/{slug} for every registered venue)
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // URL is always /v/<slug> -- same static HTML file for every venue, the
+  // slug is read client-side and used to scope every API/WS call.
+  const slug = window.location.pathname.split('/')[2];
+
+  const appContainer = document.getElementById('app-container');
+  const notFoundEl = document.getElementById('venue-not-found');
+  const venueNameLabel = document.getElementById('venue-name-label');
+  const qrImage = document.getElementById('qr-image');
+
   const searchInput = document.getElementById('search-input');
   const searchResults = document.getElementById('search-results');
   const queueList = document.getElementById('queue-list');
   const nowPlayingCard = document.getElementById('now-playing-card');
   const paymentModal = document.getElementById('payment-modal');
   const qrModal = document.getElementById('qr-modal');
+  const unlockModal = document.getElementById('unlock-modal');
+  const genreSelectWrapper = document.getElementById('genre-select-wrapper');
+  const genreSelect = document.getElementById('genre-select');
 
   let activeQueueIdForPayment = null;
   let selectedTierId = null;
   let priorityTiers = [];
   let searchTimeout = null;
+  let pendingUnlockPayload = null;
 
-  // 1. Live WebSockets Queue Listener
+  const apiBase = `/api/v/${encodeURIComponent(slug)}`;
+
+  // Confirm the slug is a real venue before wiring anything else up.
+  try {
+    const res = await fetch(`${apiBase}/meta`);
+    if (!res.ok) throw new Error('not found');
+    const venue = await res.json();
+    if (venueNameLabel) venueNameLabel.textContent = venue.name;
+    if (qrImage) qrImage.src = `${apiBase}/qr.svg`;
+  } catch (err) {
+    if (appContainer) appContainer.style.display = 'none';
+    if (notFoundEl) notFoundEl.style.display = 'block';
+    return; // Don't wire up search/queue/WS for a venue that doesn't exist.
+  }
+
+  // 1b. Genre/style picker -- empty for Free venues or Pro venues with no
+  // styles configured yet, in which case the whole row stays hidden and
+  // every request goes up untagged (style: null), same as before this existed.
+  try {
+    const stylesRes = await fetch(`${apiBase}/styles`);
+    const styles = stylesRes.ok ? await stylesRes.json() : [];
+    if (styles.length > 0 && genreSelect && genreSelectWrapper) {
+      const optionFor = (s) => {
+        if (s.rule === 'prohibited') return `<option value="${escapeHtml(s.name)}" disabled>${escapeHtml(s.name)} — not accepted here</option>`;
+        if (s.rule === 'premium_only') return `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)} — premium 🔒</option>`;
+        return `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`;
+      };
+      genreSelect.innerHTML = `<option value="">No specific genre</option>` + styles.map(optionFor).join('');
+      genreSelectWrapper.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Failed to load venue styles:', err);
+  }
+
+  // 1. Live WebSockets Queue Listener, scoped to this venue
   window.JukeboxWS.on('QUEUE_UPDATED', (data) => {
     renderNowPlaying(data.currently_playing);
     renderQueue(data.queue);
   });
+  window.JukeboxWS.connect(`?venue=${encodeURIComponent(slug)}`);
 
   // 2. Search Handler with Debounce
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim();
       clearTimeout(searchTimeout);
-      
+
       if (!query) {
         searchResults.innerHTML = '';
         return;
@@ -38,9 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function performSearch(query) {
     searchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted);">Searching music catalog...</div>';
-    
+
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${apiBase}/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('Search failed');
       const tracks = await res.json();
       renderSearchResults(tracks);
@@ -65,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(track.artist)} • ${formatTime(track.duration_seconds)}</div>
           </div>
         </div>
-        <button class="btn btn-primary btn-sm add-btn" 
+        <button class="btn btn-primary btn-sm add-btn"
           data-song-id="${track.song_id}"
           data-title="${escapeHtml(track.title)}"
           data-artist="${escapeHtml(track.artist)}"
@@ -87,7 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
           duration_seconds: parseInt(btn.dataset.duration),
           thumbnail_url: btn.dataset.thumb,
           provider: btn.dataset.provider,
-          user_name: "Guest Jukeboxer"
+          user_name: "Guest Jukeboxer",
+          style: (genreSelect && genreSelect.value) || null
         };
         await addToQueue(payload);
       });
@@ -96,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function addToQueue(payload) {
     try {
-      const res = await fetch('/api/queue/add', {
+      const res = await fetch(`${apiBase}/queue/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -106,12 +155,62 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(data.message, 'success');
         searchResults.innerHTML = '';
         if (searchInput) searchInput.value = '';
+      } else if (res.status === 402 && data.detail && data.detail.requires_unlock) {
+        // Style needs a paid unlock -- stash the track and open the confirm modal
+        // instead of failing outright (see style_service.check_style_for_add).
+        openUnlockModal(payload, data.detail);
       } else {
-        showToast(data.detail || 'Error adding song.', 'error');
+        const message = typeof data.detail === 'string' ? data.detail : (data.detail && data.detail.message);
+        showToast(message || 'Error adding song.', 'error');
       }
     } catch (err) {
       showToast('Network error adding song.', 'error');
     }
+  }
+
+  // 5b. Premium Style Unlock Modal
+  function openUnlockModal(payload, detail) {
+    pendingUnlockPayload = {
+      ...payload,
+      style: detail.style,
+      payment_method: 'mock_card'
+    };
+    const msgEl = document.getElementById('unlock-modal-message');
+    if (msgEl) msgEl.textContent = detail.message || `Pay $${Number(detail.unlock_fee).toFixed(2)} to add this ${detail.style} track.`;
+    if (unlockModal) unlockModal.classList.add('active');
+  }
+
+  const submitUnlockBtn = document.getElementById('submit-unlock-btn');
+  if (submitUnlockBtn) {
+    submitUnlockBtn.addEventListener('click', async () => {
+      if (!pendingUnlockPayload) return;
+
+      submitUnlockBtn.disabled = true;
+      submitUnlockBtn.textContent = 'Processing Payment...';
+
+      try {
+        const res = await fetch(`${apiBase}/queue/add-premium`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendingUnlockPayload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          if (unlockModal) unlockModal.classList.remove('active');
+          searchResults.innerHTML = '';
+          if (searchInput) searchInput.value = '';
+          pendingUnlockPayload = null;
+        } else {
+          showToast(data.detail || 'Payment simulation failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error processing payment.', 'error');
+      } finally {
+        submitUnlockBtn.disabled = false;
+        submitUnlockBtn.textContent = 'Pay & Add Song 🔓';
+      }
+    });
   }
 
   // 3. Render Currently Playing Hero Card
@@ -200,10 +299,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function openPaymentModal(queueId, title) {
     activeQueueIdForPayment = queueId;
     document.getElementById('modal-song-title').textContent = title;
-    
+
     // Fetch priority tiers
     try {
-      const res = await fetch('/api/priority-tiers');
+      const res = await fetch(`${apiBase}/priority-tiers`);
       priorityTiers = await res.json();
       renderPaymentTiers(priorityTiers);
     } catch (err) {
@@ -248,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
       submitPaymentBtn.textContent = 'Processing Payment...';
 
       try {
-        const res = await fetch('/api/payments/simulate', {
+        const res = await fetch(`${apiBase}/payments/simulate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -280,6 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       if (paymentModal) paymentModal.classList.remove('active');
       if (qrModal) qrModal.classList.remove('active');
+      if (unlockModal) unlockModal.classList.remove('active');
+      pendingUnlockPayload = null;
     });
   });
 

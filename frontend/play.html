@@ -3,28 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jukebox Continuous Playback Stage (/player)</title>
-  <meta name="description" content="Dedicated continuous video and audio playback client for Virtual Jukebox powered by YouTube IFrame API." />
+  <title>Jukebox Playback Device (/play)</title>
+  <meta name="description" content="Dedicated continuous video and audio playback client for Virtual Jukebox, pairs to a venue account via a short code." />
 
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/player.css" />
 </head>
 <body class="player-page">
-  
+
   <!-- Fullscreen Ambient Blurred Album Art Backdrop -->
   <div id="ambient-backdrop" class="ambient-backdrop"></div>
 
-  <!-- Player Stage Screen -->
-  <div class="player-stage">
-    
+  <!-- Pairing Screen: shown until this browser/device is linked to a venue -->
+  <div id="pairing-screen" class="pairing-screen">
+    <div class="glass-card pairing-card">
+      <div style="font-size: 2.5rem; margin-bottom: 8px;">🎵</div>
+      <h1 class="gradient-text" style="margin-bottom: 6px;">Link This Player</h1>
+      <p style="color: var(--text-secondary); margin-bottom: 24px;">
+        Open your venue dashboard on another device, go to <strong>Devices → Link a Device</strong>,
+        and enter the code below.
+      </p>
+      <div id="pairing-code-display" class="pairing-code-display">------</div>
+      <p id="pairing-status" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 20px;">
+        Waiting for pairing...
+      </p>
+    </div>
+  </div>
+
+  <!-- Player Stage Screen: hidden until paired -->
+  <div class="player-stage" id="player-stage" style="display: none;">
+
     <!-- Top Stage Header -->
     <header class="player-header">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div class="logo-icon">🎵</div>
         <div>
           <h1 style="font-size: 1.4rem; font-weight: 800;" class="gradient-text">Jukebox Main Stage</h1>
-          <span style="font-size: 0.8rem; color: var(--text-secondary);">Continuous Playback Client</span>
+          <span id="player-venue-label" style="font-size: 0.8rem; color: var(--text-secondary);">Continuous Playback Client</span>
         </div>
       </div>
 
@@ -36,7 +52,7 @@
 
     <!-- Main Stage Grid (Video Player + Metadata) -->
     <main class="player-main">
-      
+
       <!-- Video Player Frame Container -->
       <div class="video-frame-wrapper">
         <div id="youtube-player-iframe"></div>
@@ -85,9 +101,9 @@
 
   <!-- YouTube IFrame API Script -->
   <script src="https://www.youtube.com/iframe_api"></script>
-  
+
   <!-- JavaScript Application Scripts -->
   <script src="/static/js/common.js"></script>
-  <script src="/static/js/player.js"></script>
+  <script src="/static/js/play.js"></script>
 </body>
 </html>

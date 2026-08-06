@@ -1,16 +1,33 @@
 /**
- * Dedicated Playback Client (/player) Script
- * YouTube IFrame API Integration & Automatic Queue State Machine
+ * Playback Device Client (/play)
+ * Chromecast-style pairing: this browser registers itself as an unclaimed
+ * device, shows a short code, and polls until a venue owner claims it from
+ * their dashboard. Once claimed, behaves as the continuous YouTube IFrame API
+ * playback client, scoped to that venue via its device_token.
  */
 
 let ytPlayer = null;
 let isPlayerReady = false;
+let isYtApiReady = false;
+let isPaired = false;
 let currentTrack = null;
 let progressInterval = null;
+let deviceToken = null;
 
-// Global callback required by YouTube IFrame API Script
+const DEVICE_TOKEN_STORAGE_KEY = 'jukebox_device_token';
+const PAIRING_POLL_INTERVAL_MS = 3000;
+
+// Global callback required by YouTube IFrame API Script. May fire before or
+// after pairing completes -- only actually create the player once both are true.
 window.onYouTubeIframeAPIReady = function() {
-  console.log('[YouTube API] Script loaded. Initializing YT.Player...');
+  console.log('[YouTube API] Script loaded.');
+  isYtApiReady = true;
+  if (isPaired) createYtPlayer();
+};
+
+function createYtPlayer() {
+  if (ytPlayer || !isYtApiReady) return;
+  console.log('[YouTube API] Initializing YT.Player...');
   ytPlayer = new YT.Player('youtube-player-iframe', {
     height: '100%',
     width: '100%',
@@ -27,7 +44,7 @@ window.onYouTubeIframeAPIReady = function() {
       'onError': onPlayerError
     }
   });
-};
+}
 
 function onPlayerReady(event) {
   console.log('[YouTube Player] Ready!');
@@ -65,7 +82,7 @@ function playYouTubeTrack(songId) {
 async function notifyServerTrackEnded() {
   stopProgressTracking();
   try {
-    await fetch('/api/player/event', {
+    await fetch(`/api/devices/${encodeURIComponent(deviceToken)}/event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -81,7 +98,7 @@ async function notifyServerTrackEnded() {
 
 async function notifyServerPlayerError(errorCode) {
   try {
-    await fetch('/api/player/event', {
+    await fetch(`/api/devices/${encodeURIComponent(deviceToken)}/event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -101,9 +118,9 @@ function startProgressTracking() {
     if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
       const currentTime = ytPlayer.getCurrentTime();
       const duration = ytPlayer.getDuration() || (currentTrack ? currentTrack.duration_seconds : 180);
-      
+
       updateProgressUI(currentTime, duration);
-      
+
       // Send progress to WS for synced user displays
       window.JukeboxWS.send('PLAYER_STATUS', {
         queue_id: currentTrack ? currentTrack.queue_id : null,
@@ -134,29 +151,6 @@ function updateProgressUI(currentTime, duration) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Listen for PLAY_TRACK commands from backend WebSocket
-  window.JukeboxWS.on('PLAY_TRACK', (payload) => {
-    console.log('[Playback Client] Received PLAY_TRACK event:', payload);
-
-    if (!payload.song_id) {
-      // Idle / Empty queue state
-      currentTrack = null;
-      updatePlayerUI(null);
-      return;
-    }
-
-    currentTrack = payload;
-    updatePlayerUI(payload);
-    playYouTubeTrack(payload.song_id);
-  });
-
-  // Listen for QUEUE_UPDATED to render next track preview
-  window.JukeboxWS.on('QUEUE_UPDATED', (payload) => {
-    renderNextTrackPreview(payload.queue);
-  });
-});
-
 function updatePlayerUI(track) {
   const titleEl = document.getElementById('player-track-title');
   const artistEl = document.getElementById('player-track-artist');
@@ -173,7 +167,7 @@ function updatePlayerUI(track) {
   if (titleEl) titleEl.textContent = track.title;
   if (artistEl) artistEl.textContent = track.artist;
   if (totalTimeEl) totalTimeEl.textContent = formatTime(track.duration_seconds);
-  
+
   if (backdropEl && track.thumbnail_url) {
     backdropEl.style.backgroundImage = `url('${track.thumbnail_url}')`;
   }
@@ -199,3 +193,91 @@ function renderNextTrackPreview(queue) {
 function escapeHtml(str) {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+// --- Device pairing ---
+
+async function registerDevice() {
+  const stored = localStorage.getItem(DEVICE_TOKEN_STORAGE_KEY);
+  const res = await fetch('/api/devices/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_token: stored || null })
+  });
+  const data = await res.json();
+  deviceToken = data.device_token;
+  localStorage.setItem(DEVICE_TOKEN_STORAGE_KEY, deviceToken);
+  return data;
+}
+
+function showPairingCode(code) {
+  const codeEl = document.getElementById('pairing-code-display');
+  if (codeEl) codeEl.textContent = code || '------';
+}
+
+async function pollUntilClaimed() {
+  try {
+    const data = await registerDevice(); // also refreshes the code if it expired
+    if (data.claimed) {
+      onPaired(data);
+      return;
+    }
+    showPairingCode(data.pairing_code);
+  } catch (err) {
+    console.error('[Pairing] Poll failed:', err);
+  }
+  setTimeout(pollUntilClaimed, PAIRING_POLL_INTERVAL_MS);
+}
+
+function onPaired(data) {
+  isPaired = true;
+  const pairingScreen = document.getElementById('pairing-screen');
+  const playerStage = document.getElementById('player-stage');
+  if (pairingScreen) pairingScreen.style.display = 'none';
+  if (playerStage) playerStage.style.display = 'flex';
+
+  const venueLabel = document.getElementById('player-venue-label');
+  if (venueLabel && data.venue_name) {
+    venueLabel.textContent = `${data.venue_name} — Continuous Playback Client`;
+  }
+
+  window.JukeboxWS.connect(`?device_token=${encodeURIComponent(deviceToken)}`);
+  createYtPlayer();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Listen for PLAY_TRACK commands from backend WebSocket
+  window.JukeboxWS.on('PLAY_TRACK', (payload) => {
+    console.log('[Playback Client] Received PLAY_TRACK event:', payload);
+
+    if (!payload.song_id) {
+      // Idle / Empty queue state
+      currentTrack = null;
+      updatePlayerUI(null);
+      return;
+    }
+
+    currentTrack = payload;
+    updatePlayerUI(payload);
+    playYouTubeTrack(payload.song_id);
+  });
+
+  // Listen for QUEUE_UPDATED to render next track preview
+  window.JukeboxWS.on('QUEUE_UPDATED', (payload) => {
+    renderNextTrackPreview(payload.queue);
+  });
+
+  try {
+    const initial = await registerDevice();
+    if (initial.claimed) {
+      onPaired(initial);
+    } else {
+      showPairingCode(initial.pairing_code);
+      setTimeout(pollUntilClaimed, PAIRING_POLL_INTERVAL_MS);
+    }
+  } catch (err) {
+    console.error('[Pairing] Initial device registration failed:', err);
+    const statusEl = document.getElementById('pairing-status');
+    if (statusEl) statusEl.textContent = 'Could not reach the server. Retrying...';
+    setTimeout(pollUntilClaimed, PAIRING_POLL_INTERVAL_MS);
+  }
+});

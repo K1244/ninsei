@@ -11,15 +11,22 @@
   <link rel="stylesheet" href="/static/css/jukebox.css" />
 </head>
 <body>
-  <div class="app-container">
-    
+  <!-- Shown instead of everything else if the /v/<slug> in the URL doesn't match a real venue -->
+  <div id="venue-not-found" class="glass-card" style="display: none; max-width: 420px; margin: 15vh auto; padding: 32px; text-align: center;">
+    <div style="font-size: 2.5rem; margin-bottom: 12px;">🔍</div>
+    <h2 class="gradient-text" style="margin-bottom: 8px;">Venue Not Found</h2>
+    <p style="color: var(--text-secondary);">This jukebox link doesn't match any registered venue. Double-check the QR code or link with the venue staff.</p>
+  </div>
+
+  <div class="app-container" id="app-container">
+
     <!-- Top Header Bar -->
     <header class="header-bar glass-card">
       <div class="logo-group">
         <div class="logo-icon">🎵</div>
         <div>
           <h1 class="brand-title gradient-text">Jukebox VIP</h1>
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Party Room #4092</span>
+          <span id="venue-name-label" style="font-size: 0.75rem; color: var(--text-muted);">Loading venue...</span>
         </div>
       </div>
       <button id="show-qr-btn" class="btn btn-secondary btn-sm" aria-label="Show QR Code">
@@ -45,6 +52,12 @@
           placeholder="Search YouTube songs, artists..." 
           autocomplete="off"
         />
+      </div>
+      <div id="genre-select-wrapper" style="display: none; margin-top: 10px;">
+        <label for="genre-select" style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">
+          Tag your request's genre (this venue enforces style rules):
+        </label>
+        <select id="genre-select" class="search-input" style="padding: 10px 14px; font-size: 0.9rem;"></select>
       </div>
       <div id="search-results" class="search-results"></div>
     </section>
@@ -98,6 +111,38 @@
     </div>
   </div>
 
+  <!-- Premium Style Unlock Modal -->
+  <div id="unlock-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="unlock-modal-title">
+    <div class="modal-content">
+      <h2 id="unlock-modal-title" class="gradient-text" style="font-size: 1.5rem; margin-bottom: 6px;">
+        🔒 Premium Style
+      </h2>
+      <p id="unlock-modal-message" style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+        This style requires a one-time unlock fee.
+      </p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+          Mock Payment Card (Simulated):
+        </label>
+        <input
+          type="text"
+          class="search-input"
+          value="•••• •••• •••• 4242 (Mock Visa)"
+          disabled
+          style="font-size: 0.9rem; padding: 10px 14px;"
+        />
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary close-modal-btn" style="flex: 1;">Cancel</button>
+        <button id="submit-unlock-btn" class="btn btn-primary" style="flex: 2;">
+          Pay & Add Song 🔓
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- QR Code Modal -->
   <div id="qr-modal" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-content" style="text-align: center;">
@@ -106,15 +151,9 @@
         Share this QR code with guests in the room to let them queue songs directly from their phones.
       </p>
       
-      <!-- Visual SVG Simulated QR Code -->
+      <!-- Real QR code, generated server-side and scoped to this venue's slug -->
       <div style="background: #fff; padding: 16px; border-radius: 16px; display: inline-block; margin-bottom: 20px;">
-        <svg width="180" height="180" viewBox="0 0 100 100" fill="#000">
-          <rect width="100" height="100" fill="#fff" />
-          <path d="M10 10h30v30H10zM15 15v20h20V15zM20 20h10v10H20z" />
-          <path d="M60 10h30v30H60zM65 15v20h20V15zM70 20h10v10H70z" />
-          <path d="M10 60h30v30H10zM15 65v20h20V65zM20 70h10v10H20z" />
-          <path d="M45 10h10v10H45zM45 30h10v20H45zM10 45h20v10H10zM70 45h20v10H70zM45 60h20v10H45zM45 80h10v10H45zM70 70h20v20H70z" />
-        </svg>
+        <img id="qr-image" src="" alt="QR code to join this venue's jukebox" width="180" height="180" />
       </div>
 
       <div>

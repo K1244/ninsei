@@ -7,13 +7,21 @@ class JukeboxWSClient {
     this.ws = null;
     this.listeners = {};
     this.reconnectInterval = 3000;
-    this.connect();
+    this.wsQuery = null; // e.g. '?venue=slug' or '?device_token=xxx' or '' for cookie-based owner auth
+    // Deliberately does NOT auto-connect: every page now serves a different
+    // tenant/role (guest/player/owner), so each one must call connect(query)
+    // once it knows who it is instead of guessing a bare /ws.
   }
 
-  connect() {
+  connect(query = '') {
+    this.wsQuery = query;
+    this._openSocket();
+  }
+
+  _openSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
+    const wsUrl = `${protocol}//${window.location.host}/ws${this.wsQuery || ''}`;
+
     console.log(`[JukeboxWS] Connecting to ${wsUrl}...`);
     this.ws = new WebSocket(wsUrl);
 
@@ -37,7 +45,7 @@ class JukeboxWSClient {
     this.ws.onclose = () => {
       console.warn('[JukeboxWS] Connection closed. Reconnecting in 3s...');
       this.emit('connection_change', { connected: false });
-      setTimeout(() => this.connect(), this.reconnectInterval);
+      setTimeout(() => this._openSocket(), this.reconnectInterval);
     };
 
     this.ws.onerror = (err) => {
@@ -103,4 +111,7 @@ function formatTime(seconds) {
   return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
+// Instantiated once, connected explicitly by each page's own script (see
+// jukebox.js / play.js / dashboard.js) once it knows its venue slug,
+// device_token, or that it should rely on the owner session cookie.
 window.JukeboxWS = new JukeboxWSClient();
