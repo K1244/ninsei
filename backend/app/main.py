@@ -7,7 +7,10 @@ from fastapi.responses import FileResponse
 
 from backend.app.config import settings
 from backend.app.database import init_db, AsyncSessionLocal
-from backend.app.routers import ws_router, auth_router, device_router, venue_router, guest_router
+from backend.app.routers import (
+    ws_router, auth_router, device_router, venue_router, guest_router,
+    directory_router, patron_router,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -64,6 +67,8 @@ app.include_router(auth_router.router)
 app.include_router(device_router.router)
 app.include_router(venue_router.router)
 app.include_router(guest_router.router)
+app.include_router(directory_router.router)
+app.include_router(patron_router.router)
 app.include_router(ws_router.router)
 
 # Base directories
@@ -110,3 +115,26 @@ async def guest_page(slug: str):
     # client-side (see jukebox.js), which calls /api/v/{slug}/meta to confirm
     # it's real and shows a "venue not found" state otherwise.
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+# --- Clubowna pixelart patron-facing pages (PLAN.md sections 2/3/6/10) ---
+
+@app.get("/room", response_class=FileResponse)
+async def room_page():
+    # The pixelart landing scene -- a patron's entry point into Clubowna,
+    # separate from "/" (the venue-owner marketing/signup page above, kept
+    # as-is per PLAN.md's "keep the working parts" instruction).
+    return FileResponse(os.path.join(FRONTEND_DIR, "room.html"))
+
+@app.get("/venues", response_class=FileResponse)
+async def venues_page():
+    # The venue hub/directory (PLAN.md section 6) -- venues.js pulls the
+    # actual list from GET /api/venues (directory_router.py).
+    return FileResponse(os.path.join(FRONTEND_DIR, "venues.html"))
+
+@app.get("/venue/{slug}", response_class=FileResponse)
+async def venue_scene_page(slug: str):
+    # The pixelart venue scene (PLAN.md section 3) -- distinct from /v/{slug}
+    # above, which is the existing plain guest jukebox request page. venue.js
+    # reads the slug client-side and drives everything off
+    # GET /api/venues/{slug} + GET /api/v/{slug}/access.
+    return FileResponse(os.path.join(FRONTEND_DIR, "venue.html"))

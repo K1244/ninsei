@@ -1,15 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from sqlalchemy import select, func
+from typing import List, Optional
 
 from backend.app.database import get_db
-from backend.app.models import Venue
+from backend.app.models import Venue, VenueMode, Purchase, Transaction
 from backend.app.auth import get_current_venue
-from backend.app.config import settings, FAVORITE_GENRE_OPTIONS, FAVORITE_GENRE_KEYS
+from backend.app.config import (
+    settings, FAVORITE_GENRE_OPTIONS, FAVORITE_GENRE_KEYS,
+    MODULE_OPTIONS, MODULE_KEYS, EVENT_TYPE_OPTIONS, SCENE_THEME_OPTIONS,
+)
 from backend.app.schemas import (
     DeviceClaimRequest, DeviceResponse, VenueResponse, VenueSettingsUpdate,
     SubscriptionUpgradeRequest, VenueStyleCreate, VenueStyleUpdate, VenueStyleResponse,
-    RevenueSummaryResponse,
+    RevenueSummaryResponse, VenueAdminSettingsUpdate, EventCreate, EventUpdate, EventResponse,
+    MembershipPlanCreate, MembershipPlanUpdate, MembershipPlanResponse, ProductCreate, ProductUpdate,
+    ProductResponse, AccessRequestDecision, AccessRequestResponse, QrScanRequest, QrScanResponse,
 )
 from backend.app.services.device_service import (
     claim_device, list_devices, unlink_device,
@@ -17,7 +23,8 @@ from backend.app.services.device_service import (
 )
 from backend.app.services.queue_service import skip_current_track, clear_queue, remove_from_queue
 from backend.app.services.ws_manager import ws_manager
-from backend.app.services import style_service, autoplay_service
+from backend.app.services import style_service, autoplay_service, event_service
+from backend.app.services import membership_service, product_service, access_request_service, access_service
 from backend.app.services.payment_service import get_revenue_summary
 from backend.app.media_providers.factory import MediaProviderFactory
 from backend.app.media_providers.base import SpotifyPremiumRequiredException
@@ -286,3 +293,201 @@ async def remove_item(
     if not success:
         raise HTTPException(status_code=404, detail="Queue item not found.")
     return {"success": True, "message": "Queue item removed."}
+
+
+# ============================================================
+# Clubowna: community layer admin (venue identity, modules,
+# events, memberships, products, access requests, QR scanner)
+# ============================================================
+
+# --- Option lists (single source of truth -- see config.py) ---
+
+@router.get("/module-options")
+async def module_options(venue: Venue = Depends(get_current_venue)):
+    return MODULE_OPTIONS
+
+
+@router.get("/event-type-options")
+async def event_type_options(venue: Venue = Depends(get_current_venue)):
+    return EVENT_TYPE_OPTIONS
+
+
+@router.get("/scene-theme-options")
+async def scene_theme_options(venue: Venue = Depends(get_current_venue)):
+    return SCENE_THEME_OPTIONS
+
+
+# --- Venue identity / mode / modules ---
+
+@router.patch("/community-settings", response_model=VenueResponse)
+async def update_community_settings(
+    req: VenueAdminSettingsUpdate,
+    venue: Venue = Depends(get_current_venue),
+    db: AsyncSession = Depends(get_db),
+):
+    """Separate from PATCH /settings above (jukebox/media-provider fields) --
+    this is the venue's identity/access-mode/module-toggle side of things."""
+    if req.description is not None:
+        venue.description = req.description.strip() or None
+    if req.address is not None:
+        venue.address = req.address.strip() or None
+    if req.scene_theme is not None:
+        venue.scene_theme = req.scene_theme.strip() or venue.scene_theme
+    if req.mode is not None:
+        try:
+            venue.mode = VenueMode(req.mode)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Unknown mode '{req.mode}'. Supported: {[m.value for m in VenueMode]}")
+    if req.available_modules is not None:
+        unknown = [m for m in req.available_modules if m not in MODULE_KEYS]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Unknown module(s): {', '.join(unknown)}. Supported: {sorted(MODULE_KEYS)}")
+        venue.available_modules = list(dict.fromkeys(req.available_modules))
+
+    await db.commit()
+    await db.refresh(venue)
+    return venue
+
+
+# --- Events ---
+
+@router.get("/events", response_model=List[EventResponse])
+async def admin_list_events(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    return await event_service.list_events(db, venue.id)
+
+
+@router.post("/events", response_model=EventResponse)
+async def admin_create_event(req: EventCreate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    try:
+        return await event_service.create_event(db, venue.id, req)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+
+@router.patch("/events/{event_id}", response_model=EventResponse)
+async def admin_update_event(
+    event_id: int, req: EventUpdate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db),
+):
+    try:
+        event = await event_service.update_event(db, venue.id, event_id, req)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found.")
+    return event
+
+
+@router.delete("/events/{event_id}")
+async def admin_delete_event(event_id: int, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    success = await event_service.delete_event(db, venue.id, event_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Event not found.")
+    return {"success": True, "message": "Event removed."}
+
+
+# --- Membership plans ---
+
+@router.get("/membership-plans", response_model=List[MembershipPlanResponse])
+async def admin_list_plans(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    return await membership_service.list_plans(db, venue.id)
+
+
+@router.post("/membership-plans", response_model=MembershipPlanResponse)
+async def admin_create_plan(req: MembershipPlanCreate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    try:
+        return await membership_service.create_plan(db, venue.id, req)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+
+@router.patch("/membership-plans/{plan_id}", response_model=MembershipPlanResponse)
+async def admin_update_plan(
+    plan_id: int, req: MembershipPlanUpdate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db),
+):
+    try:
+        plan = await membership_service.update_plan(db, venue.id, plan_id, req)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    if not plan:
+        raise HTTPException(status_code=404, detail="Membership plan not found.")
+    return plan
+
+
+@router.delete("/membership-plans/{plan_id}")
+async def admin_delete_plan(plan_id: int, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    success = await membership_service.delete_plan(db, venue.id, plan_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Membership plan not found.")
+    return {"success": True, "message": "Membership plan removed."}
+
+
+# --- Products ---
+
+@router.get("/products", response_model=List[ProductResponse])
+async def admin_list_products(venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    return await product_service.list_products(db, venue.id)
+
+
+@router.post("/products", response_model=ProductResponse)
+async def admin_create_product(req: ProductCreate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    return await product_service.create_product(db, venue.id, req)
+
+
+@router.patch("/products/{product_id}", response_model=ProductResponse)
+async def admin_update_product(
+    product_id: int, req: ProductUpdate, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db),
+):
+    product = await product_service.update_product(db, venue.id, product_id, req)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found.")
+    return product
+
+
+@router.delete("/products/{product_id}")
+async def admin_delete_product(product_id: int, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    success = await product_service.delete_product(db, venue.id, product_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found.")
+    return {"success": True, "message": "Product removed."}
+
+
+# --- Access requests ---
+
+@router.get("/access-requests", response_model=List[AccessRequestResponse])
+async def admin_list_access_requests(
+    status: Optional[str] = None, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db),
+):
+    try:
+        requests = await access_request_service.list_requests(db, venue.id, status)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Unknown status '{status}'.")
+    out = []
+    for r in requests:
+        resp = AccessRequestResponse.model_validate(r)
+        resp.user_display_name = r.user.display_name if r.user else None
+        out.append(resp)
+    return out
+
+
+@router.post("/access-requests/{request_id}/decide", response_model=AccessRequestResponse)
+async def admin_decide_access_request(
+    request_id: int, req: AccessRequestDecision, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db),
+):
+    access_request = await access_request_service.decide_request(db, venue.id, request_id, req.approve)
+    if not access_request:
+        raise HTTPException(status_code=404, detail="Access request not found.")
+    resp = AccessRequestResponse.model_validate(access_request)
+    resp.user_display_name = access_request.user.display_name if access_request.user else None
+    return resp
+
+
+# --- QR scanner (staff/door) ---
+
+@router.post("/qr-scan", response_model=QrScanResponse)
+async def scan_qr(req: QrScanRequest, venue: Venue = Depends(get_current_venue), db: AsyncSession = Depends(get_db)):
+    """Staff-facing scanner endpoint -- gated behind the owner's own session
+    for MVP (see PLAN.md's "keep 1 login = 1 venue" pragmatic call; a
+    separate staff-account role is future scope). Returns green/yellow/red
+    per PLAN.md section 8."""
+    result = await access_service.scan_qr_pass(db, venue, req.token)
+    return QrScanResponse(**result)

@@ -69,6 +69,15 @@ _LIGHT_MIGRATIONS = [
     ("transactions", "app_amount", "FLOAT NOT NULL DEFAULT 0.0", "FLOAT NOT NULL DEFAULT 0.0"),
     ("venues", "favorite_genres", "TEXT NOT NULL DEFAULT ''", "TEXT NOT NULL DEFAULT ''"),
     ("venues", "player_link_token", "VARCHAR(64) NOT NULL DEFAULT ''", "VARCHAR(64) NOT NULL DEFAULT ''"),
+    # Clubowna: venue-as-community-hub fields (see models.py's Venue docstring / PLAN.md).
+    ("venues", "description", "TEXT", "TEXT"),
+    ("venues", "address", "VARCHAR(255)", "VARCHAR(255)"),
+    ("venues", "scene_theme", "VARCHAR(30) NOT NULL DEFAULT 'pub'", "VARCHAR(30) NOT NULL DEFAULT 'pub'"),
+    # NOTE: SQLAlchemy's Enum type stores the Python enum *member name*
+    # ("PUBLIC"), not its .value ("public") -- matches how QueueStatus/
+    # TransactionStatus rows are already stored in this DB.
+    ("venues", "mode", "VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'", "VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'"),
+    ("venues", "available_modules", "TEXT NOT NULL DEFAULT 'jukebox,qr_entry'", "TEXT NOT NULL DEFAULT 'jukebox,qr_entry'"),
 ]
 
 

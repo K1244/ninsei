@@ -29,6 +29,30 @@ class StyleRule(str, enum.Enum):
     PREMIUM_ONLY = "premium_only"
     PROHIBITED = "prohibited"
 
+class VenueMode(str, enum.Enum):
+    """A venue's (or an active Event's, overriding the venue's) access mode.
+    See access_service.py for how this drives what a given guest can do."""
+    PUBLIC = "public"
+    MEMBERS_ONLY = "members_only"
+    PRIVATE_EVENT = "private_event"
+    INVITE_ONLY = "invite_only"
+    CLOSED = "closed"
+    OBSERVER_ALLOWED = "observer_allowed"
+
+class MembershipStatus(str, enum.Enum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+class AccessRequestStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+class QrPassStatus(str, enum.Enum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+
 class Venue(Base):
     """
     A registered bar/venue owner account. Doubles as both the auth principal and
@@ -79,9 +103,30 @@ class Venue(Base):
     # DDL ALTER TABLE default can't call token_urlsafe() per row.
     player_link_token = Column(String(64), nullable=False, default=lambda: secrets.token_urlsafe(24))
 
+    # --- Clubowna: venue-as-community-hub fields (jukebox is now one module
+    # among several -- see PLAN.md) ---
+
+    description = Column(Text, nullable=True)
+    address = Column(String(255), nullable=True)
+    # Placeholder pixel-art preset key (e.g. "pub", "bar", "club", "lounge")
+    # the frontend maps to a static tile/sprite set. A full per-venue scene
+    # editor is out of scope for MVP -- see PLAN.md section 14.
+    scene_theme = Column(String(30), nullable=False, default="pub")
+
+    mode = Column(SQLEnum(VenueMode), nullable=False, default=VenueMode.PUBLIC)
+
+    # Which optional modules (see config.MODULE_OPTIONS) this venue has
+    # switched on, e.g. "jukebox,qr_entry". Comma-separated like
+    # favorite_genres_csv below -- same reasoning: a plain TEXT column is a
+    # trivial light migration, a real many-to-many table isn't worth it yet.
+    available_modules_csv = Column("available_modules", Text, nullable=False, default="jukebox,qr_entry")
+
     created_at = Column(DateTime, default=_utcnow)
 
     devices = relationship("DeviceLink", back_populates="venue")
+    events = relationship("Event", back_populates="venue")
+    membership_plans = relationship("MembershipPlan", back_populates="venue")
+    products = relationship("Product", back_populates="venue")
 
     @property
     def favorite_genres(self) -> list:
@@ -90,6 +135,14 @@ class Venue(Base):
     @favorite_genres.setter
     def favorite_genres(self, genres) -> None:
         self.favorite_genres_csv = ",".join(genres)
+
+    @property
+    def available_modules(self) -> list:
+        return [m for m in (self.available_modules_csv or "").split(",") if m]
+
+    @available_modules.setter
+    def available_modules(self, modules) -> None:
+        self.available_modules_csv = ",".join(modules)
 
 class DeviceLink(Base):
     """
@@ -195,3 +248,230 @@ class VenueStyle(Base):
     name = Column(String(60), nullable=False)
     rule = Column(SQLEnum(StyleRule), nullable=False, default=StyleRule.PREFERRED)
     created_at = Column(DateTime, default=_utcnow)
+
+
+# --- Clubowna domain model: patrons, events, membership, access ---
+# See PLAN.md section 4. Jukebox above stays exactly as-is; everything below
+# is the new "community OS" layer it now lives inside.
+
+class User(Base):
+    """
+    A patron/guest identity -- deliberately separate from Venue (which is the
+    owner/tenant login, see its docstring). No email or password: identity is
+    a bearer token minted on first visit and persisted in the browser's
+    localStorage, the same pattern DeviceLink already uses for playback
+    devices. This lets guests browse and observe anonymously, and only pick a
+    display name once they actually need one (holding a membership, sending
+    an access request). A full account system (email verification, password
+    reset, cross-device login) is deliberately out of scope for MVP -- see
+    PLAN.md section 14.
+    """
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)
+    display_name = Column(String(80), nullable=True)
+    avatar = Column(String(30), nullable=True)  # preset sprite key, e.g. "avatar_1"
+    created_at = Column(DateTime, default=_utcnow)
+
+    memberships = relationship("Membership", back_populates="user")
+    access_requests = relationship("AccessRequest", back_populates="user")
+    qr_passes = relationship("QrPass", back_populates="user")
+
+
+class Event(Base):
+    """A time-boxed happening at a venue (birthday, wedding, club night, ...).
+    While active, `access_mode` (if set) overrides the venue's own `mode` --
+    see access_service.py."""
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    title = Column(String(150), nullable=False)
+    # Free-text (config.EVENT_TYPE_OPTIONS is a soft suggestion list for the
+    # admin UI, not a DB-enforced enum) -- birthday/wedding/private_party/
+    # club_night/members_session/etc, matching PLAN.md section 4.
+    type = Column(String(40), nullable=False, default="club_night")
+    start_at = Column(DateTime, nullable=False, default=_utcnow)
+    end_at = Column(DateTime, nullable=True)  # null = open-ended/ongoing
+    organizer_name = Column(String(120), nullable=True)
+
+    access_mode = Column(SQLEnum(VenueMode), nullable=True)
+    observer_mode = Column(Boolean, nullable=False, default=False)
+    request_access_allowed = Column(Boolean, nullable=False, default=True)
+
+    guest_capacity = Column(Integer, nullable=True)
+    # Pixel-scene prop keys for this event, e.g. "cake,balloons" -- rendered
+    # as simple placeholder sprites (see PLAN.md section 17: don't block on
+    # final art).
+    scene_props_csv = Column("scene_props", Text, nullable=False, default="")
+    public_visibility = Column(Boolean, nullable=False, default=True)
+
+    created_at = Column(DateTime, default=_utcnow)
+
+    venue = relationship("Venue", back_populates="events")
+    access_requests = relationship("AccessRequest", back_populates="event")
+
+    @property
+    def scene_props(self) -> list:
+        return [p for p in (self.scene_props_csv or "").split(",") if p]
+
+    @scene_props.setter
+    def scene_props(self, props) -> None:
+        self.scene_props_csv = ",".join(props)
+
+    @property
+    def is_active(self) -> bool:
+        now = _utcnow()
+        if self.start_at and now < self.start_at:
+            return False
+        if self.end_at and now > self.end_at:
+            return False
+        return True
+
+
+class MembershipPlan(Base):
+    __tablename__ = "membership_plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    name = Column(String(80), nullable=False)
+    price = Column(Float, nullable=False, default=0.0)
+    interval = Column(String(20), nullable=False, default="monthly")  # monthly | yearly | one_time
+    perks = Column(Text, nullable=True)
+    access_level = Column(SQLEnum(VenueMode), nullable=False, default=VenueMode.MEMBERS_ONLY)
+    qr_access_enabled = Column(Boolean, nullable=False, default=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    venue = relationship("Venue", back_populates="membership_plans")
+    memberships = relationship("Membership", back_populates="plan")
+
+
+class Membership(Base):
+    __tablename__ = "memberships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    plan_id = Column(Integer, ForeignKey("membership_plans.id"), nullable=False, index=True)
+    status = Column(SQLEnum(MembershipStatus), nullable=False, default=MembershipStatus.ACTIVE)
+    valid_from = Column(DateTime, default=_utcnow)
+    valid_to = Column(DateTime, nullable=True)  # null = evergreen until cancelled
+
+    user = relationship("User", back_populates="memberships")
+    venue = relationship("Venue")
+    plan = relationship("MembershipPlan", back_populates="memberships")
+
+    @property
+    def is_active(self) -> bool:
+        if self.status != MembershipStatus.ACTIVE:
+            return False
+        if self.valid_to and _utcnow() > self.valid_to:
+            return False
+        return True
+
+
+class Product(Base):
+    """A one-off product/service a venue sells (merch, donation, one-time
+    entry, ...) outside of a recurring membership."""
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Float, nullable=False, default=0.0)
+    billing_type = Column(String(20), nullable=False, default="one_time")  # one_time | recurring | included_in_membership
+    enabled = Column(Boolean, nullable=False, default=True)
+    visibility = Column(Boolean, nullable=False, default=True)
+    # Pragmatic simplification (no separate Entitlement table for MVP, see
+    # PLAN.md): comma-separated entitlement codes this purchase grants,
+    # checked directly by access_service.py -- e.g. "venue_entry,observer".
+    grants_entitlements_csv = Column("grants_entitlements", Text, nullable=False, default="")
+    created_at = Column(DateTime, default=_utcnow)
+
+    venue = relationship("Venue", back_populates="products")
+
+    @property
+    def grants_entitlements(self) -> list:
+        return [g for g in (self.grants_entitlements_csv or "").split(",") if g]
+
+    @grants_entitlements.setter
+    def grants_entitlements(self, vals) -> None:
+        self.grants_entitlements_csv = ",".join(vals)
+
+
+class AccessRequest(Base):
+    """A patron asking a venue's organizer for entry to a members-only /
+    private / invite-only venue or event."""
+    __tablename__ = "access_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=True, index=True)
+    note = Column(String(255), nullable=True)
+    status = Column(SQLEnum(AccessRequestStatus), nullable=False, default=AccessRequestStatus.PENDING)
+    created_at = Column(DateTime, default=_utcnow)
+    decided_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="access_requests")
+    venue = relationship("Venue")
+    event = relationship("Event", back_populates="access_requests")
+
+
+class QrPass(Base):
+    """A patron's venue-entry QR credential. Token-based and opaque by
+    design (PLAN.md section 8: "don't put sensitive data in the QR") --
+    scanning it just looks up this row and re-runs the access engine."""
+    __tablename__ = "qr_passes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    token = Column(String(64), nullable=False, unique=True, index=True)
+    status = Column(SQLEnum(QrPassStatus), nullable=False, default=QrPassStatus.ACTIVE)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    user = relationship("User", back_populates="qr_passes")
+    venue = relationship("Venue")
+
+
+class Purchase(Base):
+    """
+    Generic purchase ledger for non-queue payments (memberships, one-off
+    products, one-time venue entry). Kept as a separate table from
+    Transaction (queue-priority/style-unlock payments, tied to a QueueItem
+    via a NOT NULL queue_id) rather than relaxing that column to nullable --
+    SQLite can't apply a NOT NULL -> nullable change to an already-existing
+    column through the light ADD-COLUMN migrations in database.py, only add
+    new columns. Same mock-payment/revenue-split spirit as Transaction; see
+    payment_service.py.
+    """
+    __tablename__ = "purchases"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    venue_id = Column(Integer, ForeignKey("venues.id"), nullable=False, index=True)
+    kind = Column(String(30), nullable=False)  # 'membership' | 'product' | 'one_time_entry'
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    membership_plan_id = Column(Integer, ForeignKey("membership_plans.id"), nullable=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
+
+    amount = Column(Float, nullable=False)
+    currency = Column(String(10), default="USD")
+    status = Column(SQLEnum(TransactionStatus), default=TransactionStatus.COMPLETED)
+    payment_method = Column(String(50), default="mock_card")
+    transaction_reference = Column(String(100), nullable=False)
+
+    # Same revenue-split snapshot pattern as Transaction -- see
+    # payment_service._split_amount.
+    venue_amount = Column(Float, nullable=False, default=0.0)
+    app_amount = Column(Float, nullable=False, default=0.0)
+
+    created_at = Column(DateTime, default=_utcnow)
+
+    user = relationship("User")
+    venue = relationship("Venue")

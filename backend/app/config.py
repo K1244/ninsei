@@ -70,3 +70,128 @@ FAVORITE_GENRE_OPTIONS = [
 ]
 FAVORITE_GENRE_KEYS = {g["key"] for g in FAVORITE_GENRE_OPTIONS}
 FAVORITE_GENRE_LABELS = {g["key"]: g["label"] for g in FAVORITE_GENRE_OPTIONS}
+
+# Optional modules a venue owner can switch on/off in the admin dashboard
+# (see venue_router.py, Venue.available_modules in models.py, and PLAN.md
+# section 7). "jukebox" is the module this app started as -- now just one of
+# several. New venues default to Venue.available_modules_csv's column
+# default ("jukebox,qr_entry"); the rest are opt-in.
+MODULE_OPTIONS = [
+    {"key": "jukebox", "label": "Jukebox"},
+    {"key": "observers", "label": "Observers"},
+    {"key": "request_access", "label": "Request Access"},
+    {"key": "qr_entry", "label": "QR Entry"},
+    {"key": "screen_messages", "label": "Screen Messages"},
+    {"key": "products", "label": "Products"},
+    {"key": "memberships", "label": "Memberships"},
+    {"key": "donations", "label": "Donations / Support"},
+    {"key": "merch", "label": "Merch"},
+    {"key": "lounge_access", "label": "Lounge Access"},
+    {"key": "one_time_entry", "label": "One-time Entry"},
+]
+MODULE_KEYS = {m["key"] for m in MODULE_OPTIONS}
+MODULE_LABELS = {m["key"]: m["label"] for m in MODULE_OPTIONS}
+
+# Soft suggestion list for the "type" field on an Event -- stored as plain
+# text (models.Event.type), not a DB-enforced enum, so an owner can still
+# type a custom one. Purely for the admin UI's dropdown.
+EVENT_TYPE_OPTIONS = [
+    {"key": "club_night", "label": "Club Night"},
+    {"key": "members_session", "label": "Members Session"},
+    {"key": "birthday", "label": "Birthday Party"},
+    {"key": "wedding", "label": "Wedding"},
+    {"key": "private_party", "label": "Private Party"},
+]
+
+# Pixel-art scene theme presets a venue can pick for its scene (see
+# Venue.scene_theme) -- the frontend maps each key to a static tile/sprite
+# set. Placeholder graphics only for MVP, see PLAN.md section 17.
+SCENE_THEME_OPTIONS = [
+    {"key": "pub", "label": "Pub"},
+    {"key": "bar", "label": "Bar"},
+    {"key": "club", "label": "Club"},
+    {"key": "lounge", "label": "Lounge"},
+]
+
+# --- Pixel-art asset catalog ---
+# The raw reference sheets a human dropped into the repo (see PLAN.md
+# section 17) got cut into individual transparent-background sprites by
+# tools/slice_sprites.py, indexed in frontend/static/assets/sprites/manifest.json.
+# Loaded once here so config.py stays the single place other modules pull
+# asset options from -- same pattern as FAVORITE_GENRE_OPTIONS/MODULE_OPTIONS
+# above, just sourced from that manifest instead of being hand-typed.
+#
+# Falls back to an empty catalog (never raises) if the manifest is missing --
+# e.g. a checkout of the repo without frontend/static/assets/ populated
+# shouldn't crash the whole app over avatar options.
+import json as _json
+
+_ASSETS_ROOT = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "frontend", "static", "assets", "sprites",
+)
+
+
+def _load_sprite_manifest() -> list:
+    try:
+        with open(os.path.join(_ASSETS_ROOT, "manifest.json")) as f:
+            return _json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+_SPRITE_MANIFEST = _load_sprite_manifest()
+_SPRITES_BY_CATEGORY: dict = {}
+for _entry in _SPRITE_MANIFEST:
+    _SPRITES_BY_CATEGORY.setdefault(_entry["file"].split("/", 1)[0], []).append(_entry)
+
+# User.avatar preset options (see models.User's docstring / patron_router.py's
+# GET /api/users/avatar-options). Every cut avatar sprite is independently
+# selectable -- several are the same character shown from a different angle
+# (front/back/side), which just means more picker variety, not a bug; a
+# curated "one canonical pose per character" list would need per-sheet
+# judgment calls that aren't worth making before this actually has a picker
+# UI to review them in. `key` is what's stored on User.avatar (fits its
+# String(30) column -- longest generated key here is well under that);
+# `file` is servable as-is from /static/.
+AVATAR_OPTIONS = [
+    {
+        "key": _e["file"].rsplit("/", 1)[-1][:-4],  # strip ".png"
+        "file": f"assets/sprites/{_e['file']}",
+    }
+    for _e in sorted(_SPRITES_BY_CATEGORY.get("avatars", []), key=lambda e: e["file"])
+]
+AVATAR_KEYS = {a["key"] for a in AVATAR_OPTIONS}
+
+# Event.scene_props sprite lookup (see models.Event.scene_props / seed_demo.py's
+# "cake,balloons" / "wedding_decor,flowers"). Hand-picked from props/items*.png
+# rather than auto-generated like AVATAR_OPTIONS -- scene props are placed by
+# meaning ("this event has a cake"), not browsed like an avatar grid, so each
+# key needs an actual human-chosen sprite rather than every cut prop getting
+# an auto key. Extend as more events need more prop keys; the rest of
+# props/'s cut sprites are all still on disk either way.
+SCENE_PROP_SPRITES = {
+    "balloons": "assets/sprites/props/items_r0_c0.png",
+    "gifts": "assets/sprites/props/items_r0_c1.png",
+    "flowers": "assets/sprites/props/items_r0_c2.png",
+    "wedding_decor": "assets/sprites/props/items_r0_c3.png",
+    "champagne": "assets/sprites/props/items_r0_c4.png",
+    "candles": "assets/sprites/props/items_r0_c5.png",
+    "disco_ball": "assets/sprites/props/items_r1_c0.png",
+    "cake": "assets/sprites/props/items_r1_c1.png",
+    "neon_heart": "assets/sprites/props/items_r1_c2.png",
+    "palm_plant": "assets/sprites/props/items_r1_c3.png",
+    "arcade_cabinet": "assets/sprites/props/items_r1_c4.png",
+}
+
+# Venue.scene_theme -> which cut venue-tile sheet(s) (venue/ sprites, see
+# PLAN.md section 3) the not-yet-built scene renderer should draw floor/wall
+# tiles and furniture from. "pub" and "bar" share the same warm wood-and-brass
+# set for now (no dedicated "pub" sheet was generated); "club" and "lounge"
+# each have their own.
+SCENE_THEME_SOURCE_SHEETS = {
+    "pub": ["venue_bar_items.png", "venue_bar_tools.png"],
+    "bar": ["venue_bar_items.png", "venue_bar_tools.png"],
+    "club": ["venue_club_tools.png"],
+    "lounge": ["venue_underground.png"],
+}
