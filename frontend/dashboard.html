@@ -232,6 +232,218 @@
       </div>
 
     </div>
+
+    <!-- Clubowna Community Layer -->
+    <!-- Still inside .admin-layout so it shares the same max-width/padding
+         conventions as the grid above. -->
+    <div style="margin-top: 40px;">
+    <h2 class="gradient-text" style="font-size: 1.3rem; margin-bottom: 4px;">🏛️ Clubowna Community Layer</h2>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+      Turn this venue into more than a jukebox: access mode, optional modules, events, memberships, products, and access requests.
+    </p>
+
+    <div class="admin-grid">
+
+      <!-- Left: identity/mode/modules, events, access requests -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Venue Identity & Access Mode -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Venue Identity & Access Mode</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Shown on your public venue profile and drives what guests can do by default -- a running event can override this (see Events below).
+          </p>
+          <form id="community-settings-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="venue-description-input">Description:</label>
+              <textarea id="venue-description-input" class="status-select" rows="2" placeholder="A short blurb for your public profile"></textarea>
+            </div>
+            <div class="status-form-group">
+              <label for="venue-address-input">Address:</label>
+              <input type="text" id="venue-address-input" class="status-select" placeholder="123 Main St" autocomplete="off" />
+            </div>
+            <div class="status-form-group">
+              <label for="scene-theme-select">Scene theme:</label>
+              <select id="scene-theme-select" class="status-select"></select>
+            </div>
+            <div class="status-form-group">
+              <label for="venue-mode-select">Access mode:</label>
+              <select id="venue-mode-select" class="status-select"></select>
+            </div>
+            <div class="status-form-group">
+              <label>Modules enabled:</label>
+              <div id="modules-checklist" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="color: var(--text-muted); grid-column: 1 / -1;">Loading modules...</div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Save Community Settings</button>
+          </form>
+        </div>
+
+        <!-- Events -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Events</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            A running event's access mode overrides the venue's own -- e.g. keep the venue "Public" day-to-day but lock a birthday party to "Private Event".
+          </p>
+          <div id="events-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading events...</div>
+          </div>
+          <form id="create-event-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="event-title-input">Title:</label>
+              <input type="text" id="event-title-input" class="status-select" placeholder="e.g. Sam's Birthday" autocomplete="off" required />
+            </div>
+            <div class="status-form-group">
+              <label for="event-type-select">Type:</label>
+              <select id="event-type-select" class="status-select"></select>
+            </div>
+            <div class="status-form-group">
+              <label for="event-access-mode-select">Access mode while running:</label>
+              <select id="event-access-mode-select" class="status-select"></select>
+            </div>
+            <div class="status-form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+              <label for="event-observer-toggle" style="margin: 0;">Allow observers</label>
+              <input type="checkbox" id="event-observer-toggle" style="width: 18px; height: 18px;" />
+            </div>
+            <div class="status-form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+              <label for="event-request-toggle" style="margin: 0;">Allow "request access"</label>
+              <input type="checkbox" id="event-request-toggle" checked style="width: 18px; height: 18px;" />
+            </div>
+            <div class="status-form-group">
+              <label for="event-props-input">Scene props (comma-separated, optional):</label>
+              <input type="text" id="event-props-input" class="status-select" placeholder="cake, balloons" autocomplete="off" />
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" id="event-form-submit-btn" class="btn btn-primary btn-sm" style="flex: 1;">Create Event</button>
+              <button type="button" id="event-form-cancel-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Access Requests -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Access Requests</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Guests asking to enter a members-only, private, or invite-only venue or event.
+          </p>
+          <div id="access-requests-list" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading requests...</div>
+          </div>
+        </div>
+
+        <!-- QR Entry Scanner (PLAN.md section 8) -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">QR Entry Scanner</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Check a guest's QR pass at the door. 🟢 Allow lets them straight in, 🟡 Pending means their access request is still awaiting your decision above, 🔴 Deny means no valid access right now.
+          </p>
+
+          <div id="qr-scanner-camera-wrap" style="display: none; margin-bottom: 12px;">
+            <video id="qr-scanner-video" playsinline muted style="width: 100%; border-radius: var(--radius-sm); background: #000; display: block;"></video>
+            <button id="qr-scanner-stop-camera-btn" type="button" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 8px;">Stop Camera</button>
+          </div>
+          <button id="qr-scanner-start-camera-btn" type="button" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 12px; display: none;">📷 Scan with Camera</button>
+
+          <form id="qr-scanner-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="qr-scanner-token-input">Pass token:</label>
+              <input type="text" id="qr-scanner-token-input" class="status-select" placeholder="Paste or type the token from the guest's screen" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Check Access</button>
+          </form>
+
+          <div id="qr-scanner-result"></div>
+        </div>
+
+      </div>
+
+      <!-- Right: membership plans, products -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Membership Plans -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Membership Plans</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Only shown to guests once the "Memberships" module above is enabled.
+          </p>
+          <div id="membership-plans-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading plans...</div>
+          </div>
+          <form id="create-plan-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="plan-name-input">Name:</label>
+              <input type="text" id="plan-name-input" class="status-select" placeholder="e.g. VIP" autocomplete="off" required />
+            </div>
+            <div class="status-form-group">
+              <label for="plan-price-input">Price ($):</label>
+              <input type="number" id="plan-price-input" class="status-select" min="0" step="0.5" value="0" />
+            </div>
+            <div class="status-form-group">
+              <label for="plan-interval-select">Interval:</label>
+              <select id="plan-interval-select" class="status-select">
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+                <option value="one_time">One-time</option>
+              </select>
+            </div>
+            <div class="status-form-group">
+              <label for="plan-perks-input">Perks (optional):</label>
+              <input type="text" id="plan-perks-input" class="status-select" placeholder="Skip the line, reserved booth" autocomplete="off" />
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" id="plan-form-submit-btn" class="btn btn-primary btn-sm" style="flex: 1;">Add Membership Plan</button>
+              <button type="button" id="plan-form-cancel-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Products -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Products & Services</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            One-off purchases -- merch, donations, one-time entry. Only shown to guests once the "Products" module above is enabled.
+          </p>
+          <div id="products-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <div style="color: var(--text-muted); text-align: center; padding: 12px;">Loading products...</div>
+          </div>
+          <form id="create-product-form" class="status-panel-group">
+            <div class="status-form-group">
+              <label for="product-name-input">Name:</label>
+              <input type="text" id="product-name-input" class="status-select" placeholder="e.g. Venue T-Shirt" autocomplete="off" required />
+            </div>
+            <div class="status-form-group">
+              <label for="product-price-input">Price ($):</label>
+              <input type="number" id="product-price-input" class="status-select" min="0" step="0.5" value="0" />
+            </div>
+            <div class="status-form-group">
+              <label for="product-billing-select">Type:</label>
+              <select id="product-billing-select" class="status-select">
+                <option value="one_time">One-time</option>
+                <option value="recurring">Recurring</option>
+                <option value="included_in_membership">Included in membership</option>
+              </select>
+            </div>
+            <div class="status-form-group">
+              <label for="product-description-input">Description (optional):</label>
+              <input type="text" id="product-description-input" class="status-select" placeholder="Shown to guests on the venue page" autocomplete="off" />
+            </div>
+            <div class="status-form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+              <label for="product-grants-entry-toggle" style="margin: 0;">Grants venue entry (one-time-entry pass)</label>
+              <input type="checkbox" id="product-grants-entry-toggle" style="width: 18px; height: 18px;" />
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" id="product-form-submit-btn" class="btn btn-primary btn-sm" style="flex: 1;">Add Product</button>
+              <button type="button" id="product-form-cancel-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
   </div>
 
   <!-- JavaScript Scripts -->
