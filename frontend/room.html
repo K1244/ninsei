@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Clubowna -- Your Room</title>
+  <meta name="description" content="Step into your room, then head out to find a venue -- Clubowna's pixelart entry scene." />
+
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/room.css" />
+</head>
+<body>
+
+  <div class="room-shell">
+    <div class="room-header">
+      <span class="room-header-title gradient-text">🕹️ Clubowna</span>
+      <a href="/venues" class="btn btn-secondary btn-sm">Skip to Venues →</a>
+    </div>
+
+    <div class="room-viewport">
+      <div class="room-stage" id="room-stage">
+        <div class="room-floor"></div>
+        <!-- Hotspots, decorations, and the player sprite are all injected by room.js
+             so their pixel coordinates live in one place (see ROOM_LAYOUT). -->
+      </div>
+    </div>
+
+    <p class="room-hint">
+      Move with <kbd>WASD</kbd> / <kbd>arrow keys</kbd>, or tap/click anywhere on the floor.
+      Walk up to something glowing and click it to interact.
+    </p>
+  </div>
+
+  <!-- Computer hotspot modal -->
+  <div class="modal-overlay" id="computer-modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px;">💻 Enter the System</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+        Browse venues as a guest, or log in if you run one yourself.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <a href="/venues" class="btn btn-primary" style="width: 100%;">Enter Clubowna (Browse Venues)</a>
+        <a href="/login" class="btn btn-secondary" style="width: 100%;">Venue Owner Login</a>
+        <a href="/register" class="btn btn-secondary" style="width: 100%;">Register a Venue</a>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" data-close-modal="computer-modal">Close</button>
+    </div>
+  </div>
+
+  <!-- Poster hotspot modal -->
+  <div class="modal-overlay" id="poster-modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 8px;">🎵 What is Clubowna?</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 12px;">
+        Clubowna is a community system for venues: memberships, events, access
+        permissions, and interactive modules -- jukebox included, but no
+        longer the whole show.
+      </p>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        Pick a venue, see what's happening right now, and depending on the
+        night you can walk right in, watch as an observer, ask the organizer
+        for access, or grab a membership.
+      </p>
+      <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 16px;" data-close-modal="poster-modal">Got it</button>
+    </div>
+  </div>
+
+  <!-- Wardrobe hotspot: avatar picker modal -->
+  <div class="modal-overlay" id="avatar-modal">
+    <div class="modal-content" style="max-width: 560px;">
+      <h3 style="margin-bottom: 4px;">👕 Change Your Look</h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem;">Pick a sprite -- it's saved to this browser.</p>
+      <div class="avatar-grid" id="avatar-grid">
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">Loading...</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="width: 100%;" data-close-modal="avatar-modal">Close</button>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/scene-engine.js"></script>
+  <script src="/static/js/room.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clubowna -- Venue</title>
+  <meta name="description" content="A venue's pixelart scene: see what's on, and how to get in." />
+
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/room.css" />
+  <link rel="stylesheet" href="/static/css/venue-scene.css" />
+</head>
+<body>
+
+  <div class="room-shell">
+    <div class="room-header">
+      <a href="/venues" class="btn btn-secondary btn-sm">← Venue Hub</a>
+      <span class="room-header-title gradient-text" id="venue-title">Loading...</span>
+      <span style="width: 130px;"></span>
+    </div>
+
+    <div class="room-viewport">
+      <div class="room-stage" id="venue-stage">
+        <div class="room-floor" id="venue-floor"></div>
+      </div>
+    </div>
+
+    <p class="room-hint">
+      Move with <kbd>WASD</kbd> / <kbd>arrow keys</kbd>, or tap/click anywhere on the floor.
+      Walk up to the bar, the DJ, the jukebox, or the door and click to interact.
+    </p>
+
+    <div id="venue-panel" class="venue-panel">
+      <div style="text-align: center; color: var(--text-muted); padding: 30px;">Loading venue...</div>
+    </div>
+  </div>
+
+  <!-- NPC dialogue modal (Bartender/DJ/Bouncer/Hacker) -- content is fully
+       generic and injected by venue.js's renderDialogueNode, driven by
+       whatever the backend's dialogue engine returns. -->
+  <div class="modal-overlay" id="dialogue-modal">
+    <div class="modal-content dialogue-modal-content">
+      <div id="dialogue-body"></div>
+      <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 16px;" data-close-modal="dialogue-modal">Close</button>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/scene-engine.js"></script>
+  <script src="/static/js/venue.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clubowna -- Venues</title>
+  <meta name="description" content="Pick a venue and see what's happening right now." />
+
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/venues.css" />
+</head>
+<body>
+
+  <div class="venues-shell">
+    <header class="venues-header">
+      <a href="/room" class="btn btn-secondary btn-sm">← Back to Room</a>
+      <h1 class="gradient-text" style="font-size: 1.4rem;">🏙️ Venue Hub</h1>
+      <a href="/login" class="btn btn-secondary btn-sm">Venue Owner Login</a>
+    </header>
+
+    <p class="venues-subhead">Every open venue right now. Tap one to see what's going on inside.</p>
+
+    <div id="venues-grid" class="venues-grid">
+      <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px;">Loading venues...</div>
+    </div>
+  </div>
+
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/venues.js"></script>
+</body>
+</html>

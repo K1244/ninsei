@@ -9,16 +9,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from backend.app.database import get_db
-from backend.app.models import Venue
+from backend.app.models import Venue, User
 from backend.app.config import settings
 from backend.app.schemas import (
     TrackSearchResult, QueueAddRequest, QueueAddPremiumRequest, PriorityTierResponse,
-    SimulatePaymentRequest, VenueStyleResponse,
+    SimulatePaymentRequest, VenueStyleResponse, AccessSummaryResponse, EventResponse,
+    MembershipPlanResponse, MembershipJoinRequest, ProductResponse, ProductPurchaseRequest,
+    AccessRequestCreate, AccessRequestResponse, QrPassResponse,
+    DialogueNodeResponse, DialogueAdvanceRequest,
 )
 from backend.app.media_providers.factory import MediaProviderFactory
 from backend.app.services.queue_service import get_current_queue_response, add_track_to_queue
 from backend.app.services.payment_service import get_priority_tiers, process_mock_payment, unlock_premium_style_and_add
-from backend.app.services import style_service, autoplay_service
+from backend.app.services import style_service, autoplay_service, access_service, event_service
+from backend.app.services import membership_service, product_service, access_request_service, qr_service
+from backend.app.services import dialogue_service
+from backend.app.services.user_service import get_optional_user, require_user
 
 # Public, slug-scoped endpoints -- what a guest's phone talks to after
 # scanning the venue's QR code / opening /v/{slug}. No auth: the slug itself
@@ -153,3 +159,154 @@ async def guest_qr_code(slug: str, db: AsyncSession = Depends(get_db)):
     buf = io.BytesIO()
     img.save(buf)
     return Response(content=buf.getvalue(), media_type="image/svg+xml")
+
+
+# --- Clubowna: access, events, memberships, products, access requests, QR pass ---
+# Everything below is scoped to this venue's slug like the jukebox endpoints
+# above, but drives the community layer around it rather than the queue.
+
+def _require_module(venue: Venue, key: str, label: str) -> None:
+    if key not in venue.available_modules:
+        raise HTTPException(status_code=403, detail=f"{label} isn't enabled at this venue.")
+
+
+@router.get("/access", response_model=AccessSummaryResponse)
+async def get_access(slug: str, db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user)):
+    """What the calling patron (identified or anonymous) can currently do at
+    this venue -- drives which CTAs the venue-scene screen shows."""
+    venue = await _get_venue_or_404(db, slug)
+    ctx = await access_service.evaluate_access(db, venue, user)
+    return AccessSummaryResponse(
+        can_view_venue=ctx.can_view_venue,
+        can_enter_venue=ctx.can_enter_venue,
+        can_observe_event=ctx.can_observe_event and "observers" in venue.available_modules,
+        can_request_access=ctx.can_request_access and "request_access" in venue.available_modules,
+        can_use_jukebox=ctx.can_use_jukebox and "jukebox" in venue.available_modules,
+        can_show_qr=ctx.can_show_qr and "qr_entry" in venue.available_modules,
+        can_buy_product=ctx.can_buy_product and "products" in venue.available_modules,
+        can_join_membership=ctx.can_join_membership and "memberships" in venue.available_modules,
+        reason=ctx.reason,
+        active_event=EventResponse.model_validate(ctx.active_event) if ctx.active_event else None,
+    )
+
+
+@router.get("/events", response_model=List[EventResponse])
+async def list_public_events(slug: str, db: AsyncSession = Depends(get_db)):
+    venue = await _get_venue_or_404(db, slug)
+    events = await event_service.list_events(db, venue.id, public_only=True)
+    return [EventResponse.model_validate(e) for e in events]
+
+
+@router.get("/membership-plans", response_model=List[MembershipPlanResponse])
+async def list_membership_plans(slug: str, db: AsyncSession = Depends(get_db)):
+    venue = await _get_venue_or_404(db, slug)
+    if "memberships" not in venue.available_modules:
+        return []
+    plans = await membership_service.list_plans(db, venue.id, enabled_only=True)
+    return [MembershipPlanResponse.model_validate(p) for p in plans]
+
+
+@router.post("/membership-plans/{plan_id}/join")
+async def join_membership_plan(
+    slug: str,
+    plan_id: int,
+    req: MembershipJoinRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    venue = await _get_venue_or_404(db, slug)
+    _require_module(venue, "memberships", "Memberships")
+    try:
+        result = await membership_service.join_plan(db, venue, user, plan_id, req.payment_method)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    result["user_token"] = user.token
+    return result
+
+
+@router.get("/products", response_model=List[ProductResponse])
+async def list_products(slug: str, db: AsyncSession = Depends(get_db)):
+    venue = await _get_venue_or_404(db, slug)
+    if "products" not in venue.available_modules:
+        return []
+    products = await product_service.list_products(db, venue.id, visible_only=True)
+    return [ProductResponse.model_validate(p) for p in products]
+
+
+@router.post("/products/{product_id}/purchase")
+async def purchase_product(
+    slug: str,
+    product_id: int,
+    req: ProductPurchaseRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    venue = await _get_venue_or_404(db, slug)
+    _require_module(venue, "products", "Products")
+    try:
+        result = await product_service.purchase_product(db, venue, user, product_id, req.payment_method)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    result["user_token"] = user.token
+    return result
+
+
+@router.post("/access-requests", response_model=AccessRequestResponse)
+async def request_access(
+    slug: str,
+    req: AccessRequestCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    venue = await _get_venue_or_404(db, slug)
+    _require_module(venue, "request_access", "Request access")
+    access_request = await access_request_service.create_request(db, venue.id, user, req)
+    resp = AccessRequestResponse.model_validate(access_request)
+    resp.user_display_name = user.display_name
+    return resp
+
+
+@router.get("/qr-pass", response_model=QrPassResponse)
+async def get_qr_pass(slug: str, db: AsyncSession = Depends(get_db), user: User = Depends(require_user)):
+    venue = await _get_venue_or_404(db, slug)
+    _require_module(venue, "qr_entry", "QR entry")
+    # Deliberately unconditional: a QR pass is a digital *ID badge* (this is
+    # patron X), not a proof of entitlement in itself -- anyone identified
+    # can hold one, including someone mid-way through a pending access
+    # request. Door staff scan it and access_service.scan_qr_pass
+    # re-evaluates their *current* real entitlement (membership/event/
+    # pending request) at scan time -- that's what actually decides green/
+    # yellow/red, not whether this row exists. See evaluate_access's
+    # comment for why merely holding one must never grant entry on its own.
+    qr_pass = await qr_service.get_or_create_pass(db, venue, user)
+    return qr_pass
+
+
+# --- NPC dialogue (see dialogue_data.py / dialogue_service.py) -------------
+# Talking to an NPC in the venue scene (Bartender/DJ/Bouncer/Hacker, see
+# venue.js) round-trips through these two endpoints. Stateless like the rest
+# of this router: the client always sends back which node it wants next (see
+# DialogueAdvanceRequest's docstring), no server-side conversation session.
+
+@router.get("/npcs/{npc_id}/dialogue", response_model=DialogueNodeResponse)
+async def get_npc_dialogue(
+    slug: str, npc_id: str, db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user),
+):
+    venue = await _get_venue_or_404(db, slug)
+    try:
+        start_node = dialogue_service.get_start_node_id(npc_id)
+        return await dialogue_service.resolve_node(db, venue, user, npc_id, start_node)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.post("/npcs/{npc_id}/dialogue/advance", response_model=DialogueNodeResponse)
+async def advance_npc_dialogue(
+    slug: str, npc_id: str, req: DialogueAdvanceRequest,
+    db: AsyncSession = Depends(get_db), user: Optional[User] = Depends(get_optional_user),
+):
+    venue = await _get_venue_or_404(db, slug)
+    try:
+        return await dialogue_service.resolve_node(db, venue, user, npc_id, req.next, req.context)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))

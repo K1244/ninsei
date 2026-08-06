@@ -1,0 +1,220 @@
+/* Pixelart landing room (PLAN.md section 2/10) -- a fixed-resolution "world"
+   scaled to fit the viewport via JS (see room.js), so every hotspot/sprite
+   can be placed with plain pixel coordinates instead of fighting responsive
+   layout math. */
+
+.room-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+}
+
+.room-header {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-header-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.room-viewport {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: #05060a;
+}
+
+.room-stage {
+  position: relative;
+  width: 1000px;
+  height: 640px;
+  flex-shrink: 0;
+  transform-origin: top left;
+  background:
+    linear-gradient(180deg, #191430 0%, #191430 340px, #2a2118 340px, #2a2118 640px);
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  overflow: hidden;
+}
+
+/* Back wall accent -- a soft vignette + faint starfield glow behind the
+   window/poster, purely decorative. */
+.room-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, 0.18) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Floor tile -- reuses the parquet venue tile as a repeating texture. */
+.room-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 340px;
+  background-image: url('/static/assets/sprites/venue/venue_club_tools_r0_c0.png');
+  background-size: 90px 90px;
+  background-repeat: repeat;
+  filter: brightness(0.55) saturate(0.8);
+}
+
+.room-sprite {
+  position: absolute;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.room-hotspot {
+  position: absolute;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.room-hotspot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.room-hotspot:hover,
+.room-hotspot:focus-visible {
+  transform: translateY(-4px) scale(1.04);
+  filter: drop-shadow(0 10px 16px rgba(168, 85, 247, 0.55));
+}
+
+.room-hotspot-label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  white-space: nowrap;
+  background: rgba(10, 11, 16, 0.9);
+  border: 1px solid var(--glass-border-glow);
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-main);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.room-hotspot:hover .room-hotspot-label,
+.room-hotspot:focus-visible .room-hotspot-label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.room-player {
+  position: absolute;
+  width: 70px;
+  /* player.x/y (see room.js) is the character's feet -- the ground contact
+     point -- not its top-left corner, so it doesn't get clipped by the
+     stage edge at low Y values and reads naturally as "standing at (x,y)". */
+  transform: translate(-50%, -100%);
+  transition: none;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.6));
+  z-index: 50;
+}
+
+.room-player img {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.room-player.facing-left img {
+  transform: scaleX(-1);
+}
+
+.room-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 1000px;
+}
+
+.room-hint kbd {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+}
+
+/* Avatar picker grid (wardrobe hotspot) */
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 4px;
+  margin: 16px 0;
+}
+
+.avatar-grid-item {
+  background: var(--glass-bg);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-grid-item img {
+  width: 100%;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.avatar-grid-item:hover {
+  border-color: var(--glass-border-glow);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar-grid-item.selected {
+  border-color: var(--primary-purple);
+  background: rgba(139, 92, 246, 0.2);
+}
+
+@media (max-width: 640px) {
+  .room-header-title { font-size: 0.95rem; }
+}

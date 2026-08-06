@@ -103,6 +103,31 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 
+// Generic .modal-overlay open/close (see main.css) -- wires up every
+// [data-close-modal] button and click-outside-to-close for every modal on
+// the page. Call once on DOMContentLoaded; a no-op if the page has none.
+// Shared by room.js/venue.js so each page's static modals (computer/poster/
+// wardrobe) and dynamically-built ones (the NPC dialogue modal) all close
+// the same way.
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function bindModalCloseButtons() {
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+  });
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
+  });
+}
+
 // Format seconds into MM:SS
 function formatTime(seconds) {
   if (!seconds || isNaN(seconds)) return '0:00';
