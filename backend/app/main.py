@@ -82,7 +82,11 @@ if os.path.exists(STATIC_DIR):
 # HTML Page Routes
 @app.get("/", response_class=FileResponse)
 async def landing_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "landing.html"))
+    # PLAN.md section 2 is explicit: the landing page *is* the pixelart room,
+    # not a separate marketing splash -- same file /room serves. The old
+    # marketing landing.html is unreferenced now (kept on disk, unlinked)
+    # rather than deleted, in case it's wanted again later.
+    return FileResponse(os.path.join(FRONTEND_DIR, "room.html"))
 
 @app.get("/register", response_class=FileResponse)
 async def register_page():
