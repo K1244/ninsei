@@ -84,29 +84,76 @@ _LIGHT_MIGRATIONS = [
 async def _run_light_migrations(conn):
     """Best-effort ALTER TABLE ADD COLUMN for columns introduced after a
     table already existed in production. Safe to run on every startup --
-    each column is only added if missing, and a failure on one column
-    (e.g. a brand-new table that doesn't exist yet, already covered by
-    create_all) never blocks the others."""
+    each column is only added if missing. Every attempt runs inside its own
+    SAVEPOINT (conn.begin_nested()): on Postgres, a single failed statement
+    aborts the *whole* enclosing transaction, not just that one statement --
+    without the savepoint, one real failure here would silently break every
+    migration listed after it (and _fix_venues_mode_enum_type below) despite
+    each looking individually try/excepted. The savepoint rolls back only
+    that one column's attempt, so the rest still run normally."""
     dialect = conn.dialect.name
     for table, column, sqlite_ddl, pg_ddl in _LIGHT_MIGRATIONS:
         try:
-            if dialect == "sqlite":
-                result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
-                existing_cols = {row[1] for row in result.fetchall()}
-                if column in existing_cols:
-                    continue
-                await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {column} {sqlite_ddl}")
-            else:
-                result = await conn.exec_driver_sql(
-                    "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_name = '{table}' AND column_name = '{column}'"
-                )
-                if result.fetchone():
-                    continue
-                await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {column} {pg_ddl}")
-            print(f"[Database] Migration: added {table}.{column}")
+            async with conn.begin_nested():
+                if dialect == "sqlite":
+                    result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
+                    existing_cols = {row[1] for row in result.fetchall()}
+                    if column in existing_cols:
+                        continue
+                    await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {column} {sqlite_ddl}")
+                else:
+                    result = await conn.exec_driver_sql(
+                        "SELECT column_name FROM information_schema.columns "
+                        f"WHERE table_name = '{table}' AND column_name = '{column}'"
+                    )
+                    if result.fetchone():
+                        continue
+                    await conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {column} {pg_ddl}")
+                print(f"[Database] Migration: added {table}.{column}")
         except Exception as e:
             print(f"[Database] Migration for {table}.{column} skipped/failed (likely already applied): {e}")
+
+
+async def _fix_venues_mode_enum_type(conn):
+    """One-time fixup for a real production bug: `venues.mode` was added to
+    an already-existing `venues` table by the plain "VARCHAR(20)" DDL in
+    _LIGHT_MIGRATIONS above, back when Venue.mode was still just a string.
+    models.py's Venue.mode is now `Column(SQLEnum(VenueMode), ...)`, which
+    on Postgres means a real `venuemode` enum type -- harmless on SQLite
+    (no native enum type there, it's a varchar either way), but Postgres
+    then refuses to even compare the column ("operator does not exist:
+    character varying <> venuemode") since the column's actual on-disk type
+    never got updated. _run_light_migrations' own "ALTER TABLE ADD COLUMN"
+    approach can't fix this -- the column already exists, so it's
+    permanently skipped there. This instead detects the still-varchar
+    column specifically and converts it in place; a no-op once already
+    converted, and a no-op entirely on SQLite."""
+    if conn.dialect.name != "postgresql":
+        return
+    result = await conn.exec_driver_sql(
+        "SELECT data_type FROM information_schema.columns "
+        "WHERE table_name = 'venues' AND column_name = 'mode'"
+    )
+    row = result.fetchone()
+    if not row or row[0] == "USER-DEFINED":
+        return  # column missing (create_all will make it correctly) or already the enum type
+    try:
+        # Runs inside a SAVEPOINT (see _run_light_migrations' docstring for
+        # why that matters on Postgres) -- a failure here rolls back just
+        # this fixup, not whatever _run_light_migrations already committed.
+        async with conn.begin_nested():
+            # The column's existing "DEFAULT 'PUBLIC'" (a plain varchar
+            # literal) can't be auto-cast to the enum type either -- drop
+            # it, convert the column, then re-add the default with an
+            # explicit cast.
+            await conn.exec_driver_sql("ALTER TABLE venues ALTER COLUMN mode DROP DEFAULT")
+            await conn.exec_driver_sql(
+                "ALTER TABLE venues ALTER COLUMN mode TYPE venuemode USING mode::venuemode"
+            )
+            await conn.exec_driver_sql("ALTER TABLE venues ALTER COLUMN mode SET DEFAULT 'PUBLIC'::venuemode")
+        print("[Database] Migration: converted venues.mode from varchar to the venuemode enum type")
+    except Exception as e:
+        print(f"[Database] venues.mode enum-type fixup skipped/failed: {e}")
 
 
 async def init_db():
@@ -116,6 +163,7 @@ async def init_db():
             from backend.app import models # noqa: F401
             await conn.run_sync(Base.metadata.create_all)
             await _run_light_migrations(conn)
+            await _fix_venues_mode_enum_type(conn)
         print("[Database] Database initialized successfully.")
     except Exception as e:
         if _is_explicit_db:
@@ -131,4 +179,5 @@ async def init_db():
             from backend.app import models # noqa: F401
             await conn.run_sync(Base.metadata.create_all)
             await _run_light_migrations(conn)
+            await _fix_venues_mode_enum_type(conn)
         print("[Database] SQLite fallback initialized successfully.")
