@@ -67,6 +67,7 @@ _LIGHT_MIGRATIONS = [
     ("transactions", "kind", "VARCHAR(20) NOT NULL DEFAULT 'priority_boost'", "VARCHAR(20) NOT NULL DEFAULT 'priority_boost'"),
     ("transactions", "venue_amount", "FLOAT NOT NULL DEFAULT 0.0", "FLOAT NOT NULL DEFAULT 0.0"),
     ("transactions", "app_amount", "FLOAT NOT NULL DEFAULT 0.0", "FLOAT NOT NULL DEFAULT 0.0"),
+    ("venues", "favorite_genres", "TEXT NOT NULL DEFAULT ''", "TEXT NOT NULL DEFAULT ''"),
 ]
 
 

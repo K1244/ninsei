@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stylesList = document.getElementById('styles-list');
   const stylesLocked = document.getElementById('styles-locked');
   const addStyleForm = document.getElementById('add-style-form');
+  const favoriteGenresForm = document.getElementById('favorite-genres-form');
+  const favoriteGenresList = document.getElementById('favorite-genres-list');
 
   let venue = null;
 
@@ -40,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   applyProGating(venue);
   await loadRevenue();
+  await loadFavoriteGenres();
   if (venue.subscription_tier === 'pro') await loadStyles();
 
   // 1. Listen for WebSocket Queue Updates
@@ -234,6 +237,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         showToast('Network error saving style.', 'error');
       }
     });
+  }
+
+  // 11. Favorite genres (every plan) -- nudges autoplay's picks, see autoplay_service.py
+  if (favoriteGenresForm) {
+    favoriteGenresForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const checked = Array.from(favoriteGenresList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      try {
+        const res = await fetch('/api/dashboard/settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ favorite_genres: checked })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          venue.favorite_genres = checked;
+          showToast('Favorite genres saved.', 'success');
+        } else {
+          showToast(data.detail || 'Failed to save favorite genres.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error saving favorite genres.', 'error');
+      }
+    });
+  }
+
+  async function loadFavoriteGenres() {
+    if (!favoriteGenresList) return;
+    try {
+      const res = await fetch('/api/dashboard/genre-options');
+      if (!res.ok) throw new Error('failed');
+      const options = await res.json();
+      const selected = new Set(venue.favorite_genres || []);
+      favoriteGenresList.innerHTML = options.map(g => `
+        <label class="genre-checkbox-item">
+          <input type="checkbox" value="${escapeHtml(g.key)}" ${selected.has(g.key) ? 'checked' : ''} />
+          ${escapeHtml(g.label)}
+        </label>
+      `).join('');
+    } catch (err) {
+      favoriteGenresList.innerHTML = '<div style="color: var(--accent-rose); text-align: center; padding: 12px; grid-column: 1 / -1;">Failed to load genres.</div>';
+    }
   }
 
   function applyProGating(v) {

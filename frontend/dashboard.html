@@ -151,6 +151,20 @@
           </div>
         </div>
 
+        <!-- Favorite Genres -->
+        <div class="glass-card admin-card">
+          <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Favorite Genres</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Nudges autoplay-generated playlists toward these genres when it tops up the queue (see Automated Playlists below). Available on every plan; only visible in practice once autoplay is on.
+          </p>
+          <form id="favorite-genres-form">
+            <div id="favorite-genres-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+              <div style="color: var(--text-muted); text-align: center; padding: 12px; grid-column: 1 / -1;">Loading genres...</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Save Favorite Genres</button>
+          </form>
+        </div>
+
         <!-- Automated Playlists & Premium Pricing (Pro) -->
         <div class="glass-card admin-card">
           <h2 style="font-size: 1.1rem; margin-bottom: 4px;">Automated Playlists & Premium Pricing</h2>

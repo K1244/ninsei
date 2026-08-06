@@ -48,3 +48,25 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
+
+# Fixed checklist of genres a venue owner can mark as favorites in their
+# profile (see venue_router.py / dashboard.js). A stable `key` is what's
+# actually stored on Venue.favorite_genres and compared against in
+# autoplay_service.py; `label` is just the checkbox's display text -- kept
+# separate so relabeling one later doesn't silently break stored data.
+FAVORITE_GENRE_OPTIONS = [
+    {"key": "pop", "label": "Pop"},
+    {"key": "rock", "label": "Rock"},
+    {"key": "hip_hop", "label": "Hip-Hop / Rap"},
+    {"key": "electronic", "label": "Electronic / Dance"},
+    {"key": "rnb", "label": "R&B / Soul"},
+    {"key": "country", "label": "Country"},
+    {"key": "latin", "label": "Latin"},
+    {"key": "jazz", "label": "Jazz"},
+    {"key": "classical", "label": "Classical"},
+    {"key": "metal", "label": "Metal"},
+    {"key": "indie", "label": "Indie / Alternative"},
+    {"key": "reggae", "label": "Reggae"},
+]
+FAVORITE_GENRE_KEYS = {g["key"] for g in FAVORITE_GENRE_OPTIONS}
+FAVORITE_GENRE_LABELS = {g["key"]: g["label"] for g in FAVORITE_GENRE_OPTIONS}

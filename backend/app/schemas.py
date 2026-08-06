@@ -92,6 +92,7 @@ class VenueResponse(BaseModel):
     host_spotify_tier: str
     premium_style_unlock_fee: float
     autoplay_enabled: bool
+    favorite_genres: List[str] = []
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -137,6 +138,7 @@ class VenueSettingsUpdate(BaseModel):
     host_spotify_tier: Optional[str] = None    # 'premium' or 'free' (simulated)
     premium_style_unlock_fee: Optional[float] = None  # Pro: flat fee to add a premium-only style
     autoplay_enabled: Optional[bool] = None    # Pro: auto-fill the queue when requests run low
+    favorite_genres: Optional[List[str]] = None  # keys from config.FAVORITE_GENRE_OPTIONS; nudges autoplay
 
 class SubscriptionUpgradeRequest(BaseModel):
     tier: str  # 'free' or 'pro' (simulated -- no real billing)

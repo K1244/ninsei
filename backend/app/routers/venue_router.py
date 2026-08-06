@@ -5,6 +5,7 @@ from typing import List
 from backend.app.database import get_db
 from backend.app.models import Venue
 from backend.app.auth import get_current_venue
+from backend.app.config import FAVORITE_GENRE_OPTIONS, FAVORITE_GENRE_KEYS
 from backend.app.schemas import (
     DeviceClaimRequest, DeviceResponse, VenueResponse, VenueSettingsUpdate,
     SubscriptionUpgradeRequest, VenueStyleCreate, VenueStyleUpdate, VenueStyleResponse,
@@ -38,6 +39,14 @@ async def get_settings(venue: Venue = Depends(get_current_venue)):
     return venue
 
 
+@router.get("/genre-options")
+async def genre_options(venue: Venue = Depends(get_current_venue)):
+    """The fixed checklist for the Favorite Genres profile setting below --
+    single source of truth is config.FAVORITE_GENRE_OPTIONS so the dashboard
+    never has to hardcode its own copy of the list."""
+    return FAVORITE_GENRE_OPTIONS
+
+
 @router.patch("/settings")
 async def update_settings(
     req: VenueSettingsUpdate,
@@ -65,6 +74,15 @@ async def update_settings(
         venue.premium_style_unlock_fee = req.premium_style_unlock_fee
     if req.autoplay_enabled is not None:
         venue.autoplay_enabled = req.autoplay_enabled
+    if req.favorite_genres is not None:
+        unknown = [g for g in req.favorite_genres if g not in FAVORITE_GENRE_KEYS]
+        if unknown:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown genre(s): {', '.join(unknown)}. Supported: {sorted(FAVORITE_GENRE_KEYS)}",
+            )
+        # De-dupe while preserving the order the owner picked them in.
+        venue.favorite_genres = list(dict.fromkeys(req.favorite_genres))
 
     await db.commit()
     await db.refresh(venue)

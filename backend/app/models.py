@@ -59,9 +59,26 @@ class Venue(Base):
     premium_style_unlock_fee = Column(Float, nullable=False, default=2.00)
     autoplay_enabled = Column(Boolean, nullable=False, default=False)
 
+    # Owner-set taste profile: which of config.FAVORITE_GENRE_OPTIONS this
+    # venue favors. Stored as a comma-separated string of stable `key`s
+    # (DB column stays "favorite_genres" for a plain TEXT/VARCHAR migration --
+    # see database.py's _LIGHT_MIGRATIONS); the `favorite_genres` property
+    # below is what everything else (schemas, autoplay_service) actually
+    # reads/writes as a list. Available at every tier, but only has a visible
+    # effect once autoplay is running (Pro-only) -- see autoplay_service.py.
+    favorite_genres_csv = Column("favorite_genres", Text, nullable=False, default="")
+
     created_at = Column(DateTime, default=_utcnow)
 
     devices = relationship("DeviceLink", back_populates="venue")
+
+    @property
+    def favorite_genres(self) -> list:
+        return [g for g in (self.favorite_genres_csv or "").split(",") if g]
+
+    @favorite_genres.setter
+    def favorite_genres(self, genres) -> None:
+        self.favorite_genres_csv = ",".join(genres)
 
 class DeviceLink(Base):
     """
