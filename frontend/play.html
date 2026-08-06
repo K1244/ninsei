@@ -44,9 +44,18 @@
         </div>
       </div>
 
-      <div class="room-badge">
-        <div class="live-dot"></div>
-        <span style="font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em;">LIVE PLAYER</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button id="wake-lock-retry-btn" class="btn btn-secondary btn-sm" style="display: none;">
+          🔆 Keep Screen Awake
+        </button>
+        <div id="wake-lock-badge" class="room-badge" style="display: none;" title="This screen is being kept awake so playback doesn't stop when your device would normally go to standby.">
+          <div class="live-dot"></div>
+          <span style="font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em;">SCREEN AWAKE</span>
+        </div>
+        <div class="room-badge">
+          <div class="live-dot"></div>
+          <span style="font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em;">LIVE PLAYER</span>
+        </div>
       </div>
     </header>
 

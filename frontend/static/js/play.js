@@ -13,9 +13,66 @@ let isPaired = false;
 let currentTrack = null;
 let progressInterval = null;
 let deviceToken = null;
+let wakeLock = null;
 
 const DEVICE_TOKEN_STORAGE_KEY = 'jukebox_device_token';
 const PAIRING_POLL_INTERVAL_MS = 3000;
+
+// --- Screen Wake Lock ---
+// This page is a dedicated "leave it running" display (TV/tablet at the
+// venue) -- the whole point is continuous playback, so the OS's normal
+// screen-off/standby timeout actively breaks it. The Wake Lock API keeps
+// the display on for as long as this tab is open and visible; it's
+// automatically released by the browser whenever the tab goes into the
+// background (tab-switch, app-switch, screen lock) and MUST be re-requested
+// once it's visible again, which is what the visibilitychange listener does.
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    console.warn('[WakeLock] Screen Wake Lock API not supported on this browser.');
+    showWakeLockFallback();
+    return;
+  }
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      // Fires when the tab is hidden (app-switch/screen-lock) as well as on
+      // an explicit release() call -- either way, drop our reference so the
+      // visibilitychange listener below knows to re-request it once we're
+      // foreground again.
+      console.log('[WakeLock] Released.');
+      wakeLock = null;
+      setWakeLockUI(false);
+    });
+    setWakeLockUI(true);
+    console.log('[WakeLock] Acquired -- display will not sleep while this tab is visible.');
+  } catch (err) {
+    // Most commonly a permissions/policy rejection (e.g. battery saver mode,
+    // or a browser that requires a fresh user gesture). Surface a manual
+    // retry button instead of failing silently and leaving the venue
+    // wondering why the screen dims mid-set.
+    console.warn('[WakeLock] Request failed:', err.message);
+    showWakeLockFallback();
+  }
+}
+
+function showWakeLockFallback() {
+  setWakeLockUI(false);
+  const retryBtn = document.getElementById('wake-lock-retry-btn');
+  if (retryBtn) retryBtn.style.display = 'inline-flex';
+}
+
+function setWakeLockUI(active) {
+  const badge = document.getElementById('wake-lock-badge');
+  const retryBtn = document.getElementById('wake-lock-retry-btn');
+  if (badge) badge.style.display = active ? 'flex' : 'none';
+  if (active && retryBtn) retryBtn.style.display = 'none';
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && isPaired && !wakeLock) {
+    await requestWakeLock();
+  }
+});
 
 // Global callback required by YouTube IFrame API Script. May fire before or
 // after pairing completes -- only actually create the player once both are true.
@@ -161,6 +218,7 @@ function updatePlayerUI(track) {
     if (titleEl) titleEl.textContent = 'Queue is Empty';
     if (artistEl) artistEl.textContent = 'Add songs to start playback';
     if (totalTimeEl) totalTimeEl.textContent = '0:00';
+    updateMediaSessionMetadata(null);
     return;
   }
 
@@ -171,6 +229,35 @@ function updatePlayerUI(track) {
   if (backdropEl && track.thumbnail_url) {
     backdropEl.style.backgroundImage = `url('${track.thumbnail_url}')`;
   }
+
+  updateMediaSessionMetadata(track);
+}
+
+// --- Media Session (lock-screen / OS media controls) ---
+// Doesn't replace the Wake Lock above -- this is a separate signal telling
+// the OS "there's active media here", which is what puts play/pause/track
+// info on the phone's lock screen and notification shade instead of the
+// generic browser tab, and on some mobile browsers is also what keeps the
+// tab exempt from background-tab throttling while a track is playing.
+function setupMediaSessionHandlers() {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.setActionHandler('play', () => ytPlayer && ytPlayer.playVideo && ytPlayer.playVideo());
+  navigator.mediaSession.setActionHandler('pause', () => ytPlayer && ytPlayer.pauseVideo && ytPlayer.pauseVideo());
+}
+
+function updateMediaSessionMetadata(track) {
+  if (!('mediaSession' in navigator)) return;
+  if (!track) {
+    navigator.mediaSession.metadata = null;
+    navigator.mediaSession.playbackState = 'none';
+    return;
+  }
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: track.title,
+    artist: track.artist,
+    artwork: track.thumbnail_url ? [{ src: track.thumbnail_url, sizes: '512x512', type: 'image/jpeg' }] : []
+  });
+  navigator.mediaSession.playbackState = 'playing';
 }
 
 function renderNextTrackPreview(queue) {
@@ -242,9 +329,16 @@ function onPaired(data) {
 
   window.JukeboxWS.connect(`?device_token=${encodeURIComponent(deviceToken)}`);
   createYtPlayer();
+  requestWakeLock();
+  setupMediaSessionHandlers();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const wakeLockRetryBtn = document.getElementById('wake-lock-retry-btn');
+  if (wakeLockRetryBtn) {
+    wakeLockRetryBtn.addEventListener('click', () => requestWakeLock());
+  }
+
   // Listen for PLAY_TRACK commands from backend WebSocket
   window.JukeboxWS.on('PLAY_TRACK', (payload) => {
     console.log('[Playback Client] Received PLAY_TRACK event:', payload);
