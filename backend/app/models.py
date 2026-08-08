@@ -271,7 +271,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String(64), nullable=False, unique=True, index=True)
     display_name = Column(String(80), nullable=True)
-    avatar = Column(String(30), nullable=True)  # preset sprite key, e.g. "avatar_1"
+    avatar = Column(String(30), nullable=True)  # preset character key, e.g. "avatars_6_char5" (see config.AVATAR_OPTIONS)
     created_at = Column(DateTime, default=_utcnow)
 
     memberships = relationship("Membership", back_populates="user")

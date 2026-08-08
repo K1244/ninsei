@@ -1,0 +1,576 @@
+[
+  {
+    "key": "avatars_char0",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r0_c0.png",
+    "frames": [
+      "avatars/avatars_r0_c0.png",
+      "avatars/avatars_r0_c1.png",
+      "avatars/avatars_r0_c2.png",
+      "avatars/avatars_r1_c0.png",
+      "avatars/avatars_r1_c1.png",
+      "avatars/avatars_r1_c2.png",
+      "avatars/avatars_r2_c3.png",
+      "avatars/avatars_r2_c4.png",
+      "avatars/avatars_r2_c5.png",
+      "avatars/avatars_r3_c0.png",
+      "avatars/avatars_r3_c1.png",
+      "avatars/avatars_r3_c2.png",
+      "avatars/avatars_r3_c3.png",
+      "avatars/avatars_r3_c4.png",
+      "avatars/avatars_r3_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_char1",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r0_c3.png",
+    "frames": [
+      "avatars/avatars_r0_c3.png",
+      "avatars/avatars_r0_c4.png",
+      "avatars/avatars_r0_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_char2",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r1_c3.png",
+    "frames": [
+      "avatars/avatars_r1_c3.png",
+      "avatars/avatars_r1_c4.png",
+      "avatars/avatars_r1_c5.png",
+      "avatars/avatars_r2_c0.png",
+      "avatars/avatars_r2_c1.png",
+      "avatars/avatars_r2_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_char3",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r4_c0.png",
+    "frames": [
+      "avatars/avatars_r4_c0.png",
+      "avatars/avatars_r4_c1.png",
+      "avatars/avatars_r4_c2.png",
+      "avatars/avatars_r5_c0.png",
+      "avatars/avatars_r5_c1.png",
+      "avatars/avatars_r5_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_char4",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r5_c3.png",
+    "frames": [
+      "avatars/avatars_r5_c3.png",
+      "avatars/avatars_r5_c4.png",
+      "avatars/avatars_r5_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_char5",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r6_c0.png",
+    "frames": [
+      "avatars/avatars_r6_c0.png",
+      "avatars/avatars_r6_c1.png",
+      "avatars/avatars_r6_c2.png",
+      "avatars/avatars_r6_c3.png",
+      "avatars/avatars_r6_c4.png",
+      "avatars/avatars_r6_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_char6",
+    "sheet": "avatars.png",
+    "thumbnail": "avatars/avatars_r4_c3.png",
+    "frames": [
+      "avatars/avatars_r4_c3.png",
+      "avatars/avatars_r4_c4.png",
+      "avatars/avatars_r4_c5.png"
+    ]
+  },
+  {
+    "key": "avatars4_char0",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r0_c0.png",
+    "frames": [
+      "avatars/avatars4_r0_c0.png",
+      "avatars/avatars4_r0_c1.png",
+      "avatars/avatars4_r0_c2.png",
+      "avatars/avatars4_r1_c0.png",
+      "avatars/avatars4_r1_c1.png",
+      "avatars/avatars4_r1_c2.png"
+    ]
+  },
+  {
+    "key": "avatars4_char1",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r0_c3.png",
+    "frames": [
+      "avatars/avatars4_r0_c3.png",
+      "avatars/avatars4_r0_c4.png",
+      "avatars/avatars4_r0_c5.png",
+      "avatars/avatars4_r1_c3.png",
+      "avatars/avatars4_r1_c4.png",
+      "avatars/avatars4_r1_c5.png",
+      "avatars/avatars4_r2_c0.png",
+      "avatars/avatars4_r2_c1.png",
+      "avatars/avatars4_r2_c2.png"
+    ]
+  },
+  {
+    "key": "avatars4_char2",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r2_c3.png",
+    "frames": [
+      "avatars/avatars4_r2_c3.png"
+    ]
+  },
+  {
+    "key": "avatars4_char3",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r2_c4.png",
+    "frames": [
+      "avatars/avatars4_r2_c4.png",
+      "avatars/avatars4_r3_c3.png",
+      "avatars/avatars4_r3_c4.png",
+      "avatars/avatars4_r3_c5.png"
+    ]
+  },
+  {
+    "key": "avatars4_char4",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r2_c5.png",
+    "frames": [
+      "avatars/avatars4_r2_c5.png"
+    ]
+  },
+  {
+    "key": "avatars4_char5",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r3_c0.png",
+    "frames": [
+      "avatars/avatars4_r3_c0.png",
+      "avatars/avatars4_r3_c1.png"
+    ]
+  },
+  {
+    "key": "avatars4_char6",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r3_c2.png",
+    "frames": [
+      "avatars/avatars4_r3_c2.png"
+    ]
+  },
+  {
+    "key": "avatars4_char7",
+    "sheet": "avatars4.png",
+    "thumbnail": "avatars/avatars4_r4_c0.png",
+    "frames": [
+      "avatars/avatars4_r4_c0.png",
+      "avatars/avatars4_r4_c1.png",
+      "avatars/avatars4_r4_c2.png",
+      "avatars/avatars4_r4_c3.png",
+      "avatars/avatars4_r4_c4.png",
+      "avatars/avatars4_r4_c5.png",
+      "avatars/avatars4_r5_c0.png",
+      "avatars/avatars4_r5_c1.png",
+      "avatars/avatars4_r5_c2.png",
+      "avatars/avatars4_r5_c3.png",
+      "avatars/avatars4_r5_c4.png",
+      "avatars/avatars4_r5_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char0",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r0_c0.png",
+    "frames": [
+      "avatars/avatars_1_r0_c0.png",
+      "avatars/avatars_1_r0_c1.png",
+      "avatars/avatars_1_r1_c0.png",
+      "avatars/avatars_1_r1_c1.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char1",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r2_c0.png",
+    "frames": [
+      "avatars/avatars_1_r2_c0.png",
+      "avatars/avatars_1_r2_c1.png",
+      "avatars/avatars_1_r2_c2.png",
+      "avatars/avatars_1_r2_c3.png",
+      "avatars/avatars_1_r2_c4.png",
+      "avatars/avatars_1_r2_c5.png",
+      "avatars/avatars_1_r2_c6.png",
+      "avatars/avatars_1_r2_c7.png",
+      "avatars/avatars_1_r3_c0.png",
+      "avatars/avatars_1_r3_c1.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char2",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r0_c2.png",
+    "frames": [
+      "avatars/avatars_1_r0_c2.png",
+      "avatars/avatars_1_r0_c3.png",
+      "avatars/avatars_1_r1_c2.png",
+      "avatars/avatars_1_r1_c3.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char3",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r0_c4.png",
+    "frames": [
+      "avatars/avatars_1_r0_c4.png",
+      "avatars/avatars_1_r0_c5.png",
+      "avatars/avatars_1_r0_c6.png",
+      "avatars/avatars_1_r0_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char4",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r1_c4.png",
+    "frames": [
+      "avatars/avatars_1_r1_c4.png",
+      "avatars/avatars_1_r1_c5.png",
+      "avatars/avatars_1_r1_c6.png",
+      "avatars/avatars_1_r1_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char5",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r3_c2.png",
+    "frames": [
+      "avatars/avatars_1_r3_c2.png",
+      "avatars/avatars_1_r3_c3.png"
+    ]
+  },
+  {
+    "key": "avatars_1_char6",
+    "sheet": "avatars_1.png",
+    "thumbnail": "avatars/avatars_1_r3_c4.png",
+    "frames": [
+      "avatars/avatars_1_r3_c4.png",
+      "avatars/avatars_1_r3_c5.png",
+      "avatars/avatars_1_r3_c6.png",
+      "avatars/avatars_1_r3_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char0",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r0_c0.png",
+    "frames": [
+      "avatars/avatars_3_r0_c0.png",
+      "avatars/avatars_3_r0_c1.png",
+      "avatars/avatars_3_r0_c2.png",
+      "avatars/avatars_3_r0_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char1",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r1_c3.png",
+    "frames": [
+      "avatars/avatars_3_r1_c3.png",
+      "avatars/avatars_3_r1_c4.png",
+      "avatars/avatars_3_r1_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char2",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r0_c3.png",
+    "frames": [
+      "avatars/avatars_3_r0_c3.png",
+      "avatars/avatars_3_r0_c4.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char3",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r1_c0.png",
+    "frames": [
+      "avatars/avatars_3_r1_c0.png",
+      "avatars/avatars_3_r1_c1.png",
+      "avatars/avatars_3_r1_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char4",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r2_c0.png",
+    "frames": [
+      "avatars/avatars_3_r2_c0.png",
+      "avatars/avatars_3_r2_c1.png",
+      "avatars/avatars_3_r2_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char5",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r2_c3.png",
+    "frames": [
+      "avatars/avatars_3_r2_c3.png",
+      "avatars/avatars_3_r2_c4.png",
+      "avatars/avatars_3_r2_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char6",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r3_c0.png",
+    "frames": [
+      "avatars/avatars_3_r3_c0.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char7",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r3_c1.png",
+    "frames": [
+      "avatars/avatars_3_r3_c1.png",
+      "avatars/avatars_3_r3_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char8",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r3_c3.png",
+    "frames": [
+      "avatars/avatars_3_r3_c3.png",
+      "avatars/avatars_3_r3_c4.png",
+      "avatars/avatars_3_r3_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char9",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r4_c0.png",
+    "frames": [
+      "avatars/avatars_3_r4_c0.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char10",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r4_c1.png",
+    "frames": [
+      "avatars/avatars_3_r4_c1.png",
+      "avatars/avatars_3_r4_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_3_char11",
+    "sheet": "avatars_3.png",
+    "thumbnail": "avatars/avatars_3_r4_c3.png",
+    "frames": [
+      "avatars/avatars_3_r4_c3.png",
+      "avatars/avatars_3_r4_c4.png",
+      "avatars/avatars_3_r4_c5.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char0",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r0_c0.png",
+    "frames": [
+      "avatars/avatars_5_r0_c0.png",
+      "avatars/avatars_5_r0_c1.png",
+      "avatars/avatars_5_r0_c2.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char1",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r0_c3.png",
+    "frames": [
+      "avatars/avatars_5_r0_c3.png",
+      "avatars/avatars_5_r0_c4.png",
+      "avatars/avatars_5_r0_c5.png",
+      "avatars/avatars_5_r0_c6.png",
+      "avatars/avatars_5_r0_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char2",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r1_c0.png",
+    "frames": [
+      "avatars/avatars_5_r1_c0.png",
+      "avatars/avatars_5_r1_c1.png",
+      "avatars/avatars_5_r1_c2.png",
+      "avatars/avatars_5_r1_c3.png",
+      "avatars/avatars_5_r1_c4.png",
+      "avatars/avatars_5_r1_c5.png",
+      "avatars/avatars_5_r1_c6.png",
+      "avatars/avatars_5_r1_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char3",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r2_c0.png",
+    "frames": [
+      "avatars/avatars_5_r2_c0.png",
+      "avatars/avatars_5_r2_c1.png",
+      "avatars/avatars_5_r2_c2.png",
+      "avatars/avatars_5_r2_c3.png",
+      "avatars/avatars_5_r2_c4.png",
+      "avatars/avatars_5_r2_c5.png",
+      "avatars/avatars_5_r2_c6.png",
+      "avatars/avatars_5_r2_c7.png",
+      "avatars/avatars_5_r3_c0.png",
+      "avatars/avatars_5_r3_c1.png",
+      "avatars/avatars_5_r3_c2.png",
+      "avatars/avatars_5_r3_c3.png",
+      "avatars/avatars_5_r3_c4.png",
+      "avatars/avatars_5_r3_c5.png",
+      "avatars/avatars_5_r3_c6.png",
+      "avatars/avatars_5_r3_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char4",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r4_c0.png",
+    "frames": [
+      "avatars/avatars_5_r4_c0.png",
+      "avatars/avatars_5_r4_c1.png",
+      "avatars/avatars_5_r4_c2.png",
+      "avatars/avatars_5_r4_c5.png",
+      "avatars/avatars_5_r4_c6.png",
+      "avatars/avatars_5_r4_c7.png",
+      "avatars/avatars_5_r5_c0.png",
+      "avatars/avatars_5_r5_c1.png",
+      "avatars/avatars_5_r5_c2.png",
+      "avatars/avatars_5_r5_c5.png",
+      "avatars/avatars_5_r5_c6.png",
+      "avatars/avatars_5_r5_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_5_char5",
+    "sheet": "avatars_5.png",
+    "thumbnail": "avatars/avatars_5_r4_c3.png",
+    "frames": [
+      "avatars/avatars_5_r4_c3.png",
+      "avatars/avatars_5_r4_c4.png",
+      "avatars/avatars_5_r5_c3.png",
+      "avatars/avatars_5_r5_c4.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char0",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r0_c0.png",
+    "frames": [
+      "avatars/avatars_6_r0_c0.png",
+      "avatars/avatars_6_r0_c1.png",
+      "avatars/avatars_6_r0_c2.png",
+      "avatars/avatars_6_r0_c3.png",
+      "avatars/avatars_6_r1_c0.png",
+      "avatars/avatars_6_r1_c1.png",
+      "avatars/avatars_6_r1_c2.png",
+      "avatars/avatars_6_r1_c3.png",
+      "avatars/avatars_6_r2_c0.png",
+      "avatars/avatars_6_r2_c1.png",
+      "avatars/avatars_6_r2_c2.png",
+      "avatars/avatars_6_r2_c3.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char1",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r0_c4.png",
+    "frames": [
+      "avatars/avatars_6_r0_c4.png",
+      "avatars/avatars_6_r0_c5.png",
+      "avatars/avatars_6_r0_c6.png",
+      "avatars/avatars_6_r0_c7.png",
+      "avatars/avatars_6_r1_c4.png",
+      "avatars/avatars_6_r1_c5.png",
+      "avatars/avatars_6_r1_c6.png",
+      "avatars/avatars_6_r1_c7.png",
+      "avatars/avatars_6_r3_c0.png",
+      "avatars/avatars_6_r3_c1.png",
+      "avatars/avatars_6_r3_c2.png",
+      "avatars/avatars_6_r3_c3.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char2",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r2_c4.png",
+    "frames": [
+      "avatars/avatars_6_r2_c4.png",
+      "avatars/avatars_6_r2_c5.png",
+      "avatars/avatars_6_r2_c6.png",
+      "avatars/avatars_6_r2_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char3",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r3_c4.png",
+    "frames": [
+      "avatars/avatars_6_r3_c4.png",
+      "avatars/avatars_6_r3_c5.png",
+      "avatars/avatars_6_r3_c6.png",
+      "avatars/avatars_6_r3_c7.png",
+      "avatars/avatars_6_r4_c4.png",
+      "avatars/avatars_6_r4_c5.png",
+      "avatars/avatars_6_r4_c6.png",
+      "avatars/avatars_6_r4_c7.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char4",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r4_c0.png",
+    "frames": [
+      "avatars/avatars_6_r4_c0.png",
+      "avatars/avatars_6_r4_c1.png",
+      "avatars/avatars_6_r4_c2.png",
+      "avatars/avatars_6_r4_c3.png"
+    ]
+  },
+  {
+    "key": "avatars_6_char5",
+    "sheet": "avatars_6.png",
+    "thumbnail": "avatars/avatars_6_r5_c0.png",
+    "frames": [
+      "avatars/avatars_6_r5_c0.png",
+      "avatars/avatars_6_r5_c1.png",
+      "avatars/avatars_6_r5_c2.png",
+      "avatars/avatars_6_r5_c3.png",
+      "avatars/avatars_6_r5_c4.png",
+      "avatars/avatars_6_r5_c5.png",
+      "avatars/avatars_6_r5_c6.png",
+      "avatars/avatars_6_r5_c7.png",
+      "avatars/avatars_6_r6_c0.png",
+      "avatars/avatars_6_r6_c1.png",
+      "avatars/avatars_6_r6_c2.png",
+      "avatars/avatars_6_r6_c3.png",
+      "avatars/avatars_6_r6_c4.png",
+      "avatars/avatars_6_r6_c5.png",
+      "avatars/avatars_6_r6_c6.png",
+      "avatars/avatars_6_r6_c7.png",
+      "avatars/avatars_6_r7_c0.png",
+      "avatars/avatars_6_r7_c1.png",
+      "avatars/avatars_6_r7_c2.png",
+      "avatars/avatars_6_r7_c3.png",
+      "avatars/avatars_6_r7_c4.png",
+      "avatars/avatars_6_r7_c5.png",
+      "avatars/avatars_6_r7_c6.png",
+      "avatars/avatars_6_r7_c7.png"
+    ]
+  }
+]

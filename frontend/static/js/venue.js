@@ -19,7 +19,7 @@ const STAGE_W = 1000;
 const STAGE_H = 640;
 const WALK_BOUNDS = { minX: 60, maxX: 940, minY: 360, maxY: 610 };
 const MOVE_SPEED = 260;
-const FALLBACK_AVATAR_FILE = 'assets/sprites/avatars/avatars_r0_c0.png';
+const FALLBACK_AVATAR_FRAMES = ['assets/sprites/avatars/avatars_r0_c0.png'];
 
 // Client-side mirror of config.SCENE_THEME_SOURCE_SHEETS' floor choice --
 // furniture below is deliberately theme-agnostic (see DECOR/HOTSPOTS), only
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   scene.player.x = 500;
   scene.player.y = 580;
-  scene.player.avatarFile = FALLBACK_AVATAR_FILE;
+  scene.player.avatarFrames = FALLBACK_AVATAR_FRAMES;
 
   SceneEngine.fitStageToViewport(stageEl, STAGE_W, STAGE_H);
   window.addEventListener('resize', () => SceneEngine.fitStageToViewport(stageEl, STAGE_W, STAGE_H));
@@ -110,17 +110,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function ensurePatronToken() {
-  if (localStorage.getItem(PATRON_TOKEN_KEY)) return;
+  // Always calls identify (not just when there's no saved token yet) so a
+  // returning patron's chosen avatar actually shows up here too -- identify
+  // is idempotent, it just hands back the same identity for an existing
+  // token (see user_service.identify_or_create).
   try {
     const res = await fetch('/api/users/identify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: null }),
+      body: JSON.stringify({ token: localStorage.getItem(PATRON_TOKEN_KEY) }),
     });
     if (res.ok) {
       const user = await res.json();
       localStorage.setItem(PATRON_TOKEN_KEY, user.token);
-      if (user.avatar) scene.player.avatarFile = `assets/sprites/avatars/${user.avatar}.png`;
+      if (user.avatar) {
+        const options = await fetch('/api/users/avatar-options').then(r => r.ok ? r.json() : []);
+        const chosen = options.find(o => o.key === user.avatar);
+        if (chosen) scene.player.avatarFrames = chosen.frames;
+      }
     }
   } catch (err) {
     // Fine -- most reads work anonymously too, see access_service.py.
