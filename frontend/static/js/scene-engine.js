@@ -27,9 +27,18 @@ function fitStageToViewport(stageEl, worldW, worldH) {
  * @param bounds {minX, maxX, minY, maxY} walkable area in world pixels
  * @param worldW world width in px, used to unscale click coordinates
  * @param speed px/sec in world space
+ * @param frameIntervalMs how long each animation frame of player.avatarFrames
+ *   holds while the character is actually walking (see renderPlayer) --
+ *   130ms/frame reads as a normal chibi walk-cycle without the sprite
+ *   flickering through unrelated pose art too fast to register as a person
+ *   at all
  */
-function createWalkableScene({ stageEl, playerEl, bounds, worldW, speed = 260, arriveEpsilon = 6 }) {
-  const player = { x: 0, y: 0, avatarFile: null };
+function createWalkableScene({ stageEl, playerEl, bounds, worldW, speed = 260, arriveEpsilon = 6, frameIntervalMs = 130 }) {
+  // avatarFrames: the selected character's full pose/animation frame list
+  // (see config.AVATAR_OPTIONS[].frames) -- cycled through while walking,
+  // held on frame 0 while standing still, so an idle character doesn't sit
+  // there flickering between poses that were never meant to loop at rest.
+  const player = { x: 0, y: 0, avatarFrames: null, frameIndex: 0, frameTimer: 0 };
   let moveTarget = null;
   let onArrive = null;
   const heldKeys = new Set();
@@ -89,10 +98,11 @@ function createWalkableScene({ stageEl, playerEl, bounds, worldW, speed = 260, a
   function renderPlayer() {
     playerEl.style.left = `${player.x}px`;
     playerEl.style.top = `${player.y}px`;
-    if (!player.avatarFile) return;
+    const frames = player.avatarFrames;
+    if (!frames || frames.length === 0) return;
+    const frame = frames[player.frameIndex % frames.length];
     const img = playerEl.querySelector('img');
-    const wantedSrc = `/static/${player.avatarFile}`;
-    if (!img.src.endsWith(player.avatarFile)) img.src = wantedSrc;
+    if (!img.src.endsWith(frame)) img.src = `/static/${frame}`;
   }
 
   function tick(now) {
@@ -101,6 +111,19 @@ function createWalkableScene({ stageEl, playerEl, bounds, worldW, speed = 260, a
     lastFrameTime = now;
 
     const keyboardVec = keyboardDirection();
+    const isMoving = keyboardVec.x !== 0 || keyboardVec.y !== 0 || moveTarget !== null;
+    if (isMoving) {
+      player.frameTimer += dt * 1000;
+      const frames = player.avatarFrames;
+      if (frames && frames.length > 1 && player.frameTimer >= frameIntervalMs) {
+        player.frameTimer -= frameIntervalMs;
+        player.frameIndex = (player.frameIndex + 1) % frames.length;
+      }
+    } else {
+      player.frameIndex = 0;
+      player.frameTimer = 0;
+    }
+
     if (keyboardVec.x !== 0 || keyboardVec.y !== 0) {
       player.x = clamp(player.x + keyboardVec.x * speed * dt, bounds.minX, bounds.maxX);
       player.y = clamp(player.y + keyboardVec.y * speed * dt, bounds.minY, bounds.maxY);

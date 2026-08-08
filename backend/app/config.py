@@ -146,22 +146,46 @@ for _entry in _SPRITE_MANIFEST:
     _SPRITES_BY_CATEGORY.setdefault(_entry["file"].split("/", 1)[0], []).append(_entry)
 
 # User.avatar preset options (see models.User's docstring / patron_router.py's
-# GET /api/users/avatar-options). Every cut avatar sprite is independently
-# selectable -- several are the same character shown from a different angle
-# (front/back/side), which just means more picker variety, not a bug; a
-# curated "one canonical pose per character" list would need per-sheet
-# judgment calls that aren't worth making before this actually has a picker
-# UI to review them in. `key` is what's stored on User.avatar (fits its
-# String(30) column -- longest generated key here is well under that);
-# `file` is servable as-is from /static/.
+# GET /api/users/avatar-options). Sourced from characters.json, not straight
+# off manifest.json -- the raw manifest has one entry per individually cut
+# sprite cell, and several of those are the same character from a different
+# angle (front/back/side) or a different walk-cycle frame; tools/
+# curate_characters.py groups those back into characters (see its docstring
+# for how, and PLAN.md/chat history for why that needs to be a color-
+# similarity clustering pass rather than a fixed row/col rule -- the 6 source
+# sheets don't share one column-per-character convention). `key` is what's
+# stored on User.avatar (fits its String(30) column); `thumbnail` is a single
+# representative frame for the picker grid; `frames` is every pose/animation
+# frame for that character, in display order, for the room/venue scene to
+# cycle through while the character walks.
+def _load_character_manifest() -> list:
+    try:
+        with open(os.path.join(_ASSETS_ROOT, "characters.json")) as f:
+            return _json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+_CHARACTER_MANIFEST = _load_character_manifest()
+# Most-to-least frames = best-to-worst animated: frame count is the only
+# honest, fully-automatic signal available here for "how much this character
+# actually moves" (see curate_characters.py's docstring -- there's no
+# reliable per-frame front/back/walk-cycle label to sort on instead). It's
+# not a perfect proxy -- a character with several near-duplicate reference
+# poses can outrank one with fewer but genuinely animated walk-cycle frames
+# -- but it puts the sheets that actually have real walk cycles
+# (avatars_6.png, part of avatars_5.png) at/near the top, and a picker that's
+# ordered by "how alive does this look" beats key-alphabetical either way.
 AVATAR_OPTIONS = [
     {
-        "key": _e["file"].rsplit("/", 1)[-1][:-4],  # strip ".png"
-        "file": f"assets/sprites/{_e['file']}",
+        "key": _c["key"],
+        "thumbnail": f"assets/sprites/{_c['thumbnail']}",
+        "frames": [f"assets/sprites/{_f}" for _f in _c["frames"]],
     }
-    for _e in sorted(_SPRITES_BY_CATEGORY.get("avatars", []), key=lambda e: e["file"])
+    for _c in sorted(_CHARACTER_MANIFEST, key=lambda c: (-len(c["frames"]), c["key"]))
 ]
 AVATAR_KEYS = {a["key"] for a in AVATAR_OPTIONS}
+AVATAR_FRAMES_BY_KEY = {a["key"]: a["frames"] for a in AVATAR_OPTIONS}
 
 # Event.scene_props sprite lookup (see models.Event.scene_props / seed_demo.py's
 # "cake,balloons" / "wedding_decor,flowers"). Hand-picked from props/items*.png

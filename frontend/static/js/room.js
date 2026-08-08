@@ -14,7 +14,7 @@ const WALK_BOUNDS = { minX: 60, maxX: 940, minY: 360, maxY: 610 };
 const MOVE_SPEED = 260; // px/sec in world space
 
 const PATRON_TOKEN_KEY = 'clubowna_patron_token';
-const FALLBACK_AVATAR_FILE = 'assets/sprites/avatars/avatars_r0_c0.png';
+const FALLBACK_AVATAR_FRAMES = ['assets/sprites/avatars/avatars_r0_c0.png'];
 
 // Everything on the back wall / floor that isn't the player. Interactive
 // items carry an `action`; decorations are just atmosphere.
@@ -49,6 +49,20 @@ const ROOM_LAYOUT = {
 };
 
 let playerEl, stageEl, scene;
+let avatarOptionsPromise = null;
+
+// Fetched once and cached -- both the initial "resolve the patron's saved
+// avatar key to its frame list" step and the wardrobe picker grid need the
+// same GET /api/users/avatar-options list.
+function loadAvatarOptions() {
+  if (!avatarOptionsPromise) {
+    avatarOptionsPromise = fetch('/api/users/avatar-options').then(res => {
+      if (!res.ok) throw new Error('failed');
+      return res.json();
+    });
+  }
+  return avatarOptionsPromise;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   stageEl = document.getElementById('room-stage');
@@ -61,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   scene.player.x = 500;
   scene.player.y = 560;
-  scene.player.avatarFile = FALLBACK_AVATAR_FILE;
+  scene.player.avatarFrames = FALLBACK_AVATAR_FRAMES;
 
   buildStage();
   SceneEngine.fitStageToViewport(stageEl, STAGE_W, STAGE_H);
@@ -124,7 +138,11 @@ async function identifyPatron() {
     const user = await res.json();
     localStorage.setItem(PATRON_TOKEN_KEY, user.token);
     if (user.avatar) {
-      scene.player.avatarFile = `assets/sprites/avatars/${user.avatar}.png`;
+      const options = await loadAvatarOptions();
+      const chosen = options.find(o => o.key === user.avatar);
+      // An unrecognized saved key (e.g. options were re-curated since they
+      // picked it) just falls back to the default look instead of breaking.
+      if (chosen) scene.player.avatarFrames = chosen.frames;
     }
   } catch (err) {
     // Anonymous browsing still works fine with the fallback sprite -- see
@@ -163,39 +181,41 @@ async function openAvatarPicker() {
   if (grid.dataset.loaded === 'true') return;
 
   try {
-    const res = await fetch('/api/users/avatar-options');
-    if (!res.ok) throw new Error('failed');
-    const options = await res.json();
+    const options = await loadAvatarOptions();
+    // One tile per character (see config.AVATAR_OPTIONS/tools/curate_characters.py)
+    // -- the thumbnail is just a representative frame; picking a tile hands
+    // the whole `frames` list to the scene so it can animate through them.
     grid.innerHTML = options.map(o => `
-      <div class="avatar-grid-item" data-key="${escapeHtml(o.key)}" data-file="${escapeHtml(o.file)}">
-        <img src="/static/${escapeHtml(o.file)}" alt="${escapeHtml(o.key)}" loading="lazy" />
+      <div class="avatar-grid-item" data-key="${escapeHtml(o.key)}">
+        <img src="/static/${escapeHtml(o.thumbnail)}" alt="${escapeHtml(o.key)}" loading="lazy" />
       </div>
     `).join('');
     grid.dataset.loaded = 'true';
 
     grid.querySelectorAll('.avatar-grid-item').forEach(item => {
-      item.addEventListener('click', () => selectAvatar(item.dataset.key, item.dataset.file, grid));
+      const option = options.find(o => o.key === item.dataset.key);
+      item.addEventListener('click', () => selectAvatar(option, grid));
     });
   } catch (err) {
     grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--accent-rose);">Failed to load avatars.</div>';
   }
 }
 
-async function selectAvatar(key, file, grid) {
+async function selectAvatar(option, grid) {
   try {
     const token = localStorage.getItem(PATRON_TOKEN_KEY);
     const res = await fetch('/api/users/me', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'X-User-Token': token || '' },
-      body: JSON.stringify({ avatar: key }),
+      body: JSON.stringify({ avatar: option.key }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.detail || 'Failed to save avatar.');
     }
-    scene.player.avatarFile = file;
+    scene.player.avatarFrames = option.frames;
     scene.renderPlayer();
-    grid.querySelectorAll('.avatar-grid-item').forEach(el => el.classList.toggle('selected', el.dataset.key === key));
+    grid.querySelectorAll('.avatar-grid-item').forEach(el => el.classList.toggle('selected', el.dataset.key === option.key));
     showToast('Look saved.', 'success');
   } catch (err) {
     showToast(err.message || 'Failed to save avatar.', 'error');
